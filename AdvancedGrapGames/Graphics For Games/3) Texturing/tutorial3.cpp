@@ -33,7 +33,11 @@ int main() {
 		if(Window::GetKeyboard()->KeyTriggered(KEYBOARD_2) ) {
 			renderer.ToggleRepeating();
 		}
-
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_O))
+			renderer.SwitchToOrthographic();
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_P))
+			renderer.SwitchToPerspective();
+		renderer.UpdateScene(w.GetTimer()->GetTimedMS());
 		renderer.RenderScene();
 	}
 
