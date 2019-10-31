@@ -14,8 +14,8 @@ void Camera::UpdateCamera(float msec)	{
 	pitch = min(pitch,90.0f);
 	pitch = max(pitch,-90.0f);
 
-	if(yaw <0) {
-		yaw+= 360.0f;
+	if(yaw < 0) {
+		yaw += 360.0f;
 	}
 	if(yaw > 360.0f) {
 		yaw -= 360.0f;

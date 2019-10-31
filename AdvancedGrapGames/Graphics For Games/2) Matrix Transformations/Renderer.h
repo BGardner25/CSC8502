@@ -1,11 +1,14 @@
 #pragma once
-# include "../nclgl/OGLRenderer.h"
+#include "../nclgl/OGLRenderer.h"
+#include "../nclgl/Camera.h"
+
 
 class Renderer : public OGLRenderer {
 public:
 	Renderer(Window& parent);
 	virtual ~Renderer(void);
 
+	virtual void UpdateScene(float msec);
 	virtual void RenderScene();
 
 	void SwitchToPerspective();
@@ -17,11 +20,12 @@ public:
 	inline void setFov(float f) { fov = f; }
 protected:
 	Mesh* triangle;
+	Camera* camera = new Camera();
 
 	float scale;
 	float rotation;
 	Vector3 position;
 
-	float fov = 45.0f;
+	float fov;
 };
 

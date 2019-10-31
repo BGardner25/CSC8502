@@ -49,17 +49,21 @@ int main() {
 			position.z-= 1.0f;
 		if(Window::GetKeyboard()->KeyDown(KEYBOARD_P))
 			position.z+= 1.0f;
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_Y))
-			fov += 1.0f;
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_T))
-			fov -= 1.0f;
+		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_Y)) {
+			fov += 10.0f;
+			renderer.SwitchToPerspective();
+		}
+		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_T)) {
+			fov -= 10.0f;
+			renderer.SwitchToPerspective();
+		}
 
 		renderer.SetRotation(rotation);
 		renderer.SetScale(scale);
 		renderer.SetPosition(position);
 		renderer.setFov(fov);
+		renderer.UpdateScene(w.GetTimer()->GetTimedMS());
 		renderer.RenderScene();
 	}
-
 	return 0;
 }
