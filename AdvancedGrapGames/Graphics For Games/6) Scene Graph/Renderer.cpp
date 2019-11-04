@@ -12,7 +12,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 
 	camera->SetPosition(Vector3(0, 30, 175));
-
+	
 	root = new SceneNode();
 	root->AddChild(new CubeRobot());
 
@@ -55,6 +55,7 @@ void Renderer::DrawNode(SceneNode* n) {
 		n->Draw(*this);
 	}
 
-	for (auto i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i)
+	for (vector<SceneNode*>::const_iterator i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i) {
 		DrawNode(*i);
+	}
 }

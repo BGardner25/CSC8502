@@ -6,7 +6,7 @@ uniform mat4 projMatrix;
 uniform vec4 nodeColour;
 
 in vec3 position;
-int vec2 texCoord;
+in vec2 texCoord;
 
 out Vertex {
     vec2 texCoord;
@@ -15,6 +15,7 @@ out Vertex {
 
 void main(void) {
     gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(position, 1.0);
+
     OUT.texCoord = texCoord;
     OUT.colour = nodeColour;
 }

@@ -37,10 +37,6 @@ CubeRobot::CubeRobot(void) {
 	body->AddChild(rightLeg);
 }
 
-CubeRobot::~CubeRobot(void) {
-	
-}
-
 void CubeRobot::Update(float msec) {
 	transform = transform * Matrix4::Rotation(msec / 10.0f, Vector3(0, 1, 0));
 
