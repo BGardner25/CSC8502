@@ -1,5 +1,4 @@
 #include "OBJMesh.h"
-#ifdef WEEK_2_CODE
 /*
 OBJ files look generally something like this:
 
@@ -341,5 +340,3 @@ void	OBJMesh::SetTexturesFromMTL(string &mtlFile, string &mtlType) {
 
 	SetTexturesFromMTL(mtlFile,mtlType);
 }
-
-#endif
