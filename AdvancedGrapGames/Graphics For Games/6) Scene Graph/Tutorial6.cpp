@@ -4,7 +4,7 @@
 #pragma comment(lib, "nclgl.lib")
 
 int main() {	
-	Window w("Scene Graphs!", 800,600,false);
+	Window w("Scene Graphs!", 1280, 720, false);
 	if(!w.HasInitialised()) {
 		return -1;
 	}
