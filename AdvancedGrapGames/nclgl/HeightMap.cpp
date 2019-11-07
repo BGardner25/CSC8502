@@ -5,10 +5,10 @@ HeightMap::HeightMap(std::string name) {
 	if (!file)
 		return;
 	numVertices = RAW_WIDTH * RAW_HEIGHT;
-	numIndicies = (RAW_WIDTH - 1) * (RAW_HEIGHT - 1) * 6;
+	numIndices = (RAW_WIDTH - 1) * (RAW_HEIGHT - 1) * 6;
 	vertices = new Vector3[numVertices];
 	textureCoords = new Vector2[numVertices];
-	indicies = new GLuint[numIndicies];
+	indices = new GLuint[numIndices];
 
 	unsigned char* data = new unsigned char[numVertices];
 	file.read((char*)data, numVertices * sizeof(unsigned char));
@@ -23,7 +23,7 @@ HeightMap::HeightMap(std::string name) {
 	}
 	delete data;
 
-	numIndicies = 0;
+	numIndices = 0;
 
 	for (int x = 0; x < RAW_WIDTH - 1; ++x) {
 		for (int z = 0; z < RAW_HEIGHT - 1; ++z) {
@@ -32,13 +32,13 @@ HeightMap::HeightMap(std::string name) {
 			int c = ((x + 1) * RAW_WIDTH) + (z + 1);
 			int d = (x * RAW_WIDTH) + (z + 1);
 
-			indicies[numIndicies++] = c;
-			indicies[numIndicies++] = b;
-			indicies[numIndicies++] = a;
+			indices[numIndices++] = c;
+			indices[numIndices++] = b;
+			indices[numIndices++] = a;
 
-			indicies[numIndicies++] = a;
-			indicies[numIndicies++] = d;
-			indicies[numIndicies++] = c;
+			indices[numIndices++] = a;
+			indices[numIndices++] = d;
+			indices[numIndices++] = c;
 		}
 	}
 

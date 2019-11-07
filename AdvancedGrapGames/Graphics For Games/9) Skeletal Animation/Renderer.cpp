@@ -1,11 +1,10 @@
-#ifdef WEEK_2_CODE
 #include "Renderer.h"
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	{	
 	camera			= new Camera(0,-90.0f,Vector3(-180,60,0));
 
 #ifdef MD5_USE_HARDWARE_SKINNING
-	currentShader   = new Shader("skeletonvertex.glsl", SHADERDIR"TexturedFragment.glsl");
+	currentShader   = new Shader(SHADERDIR"skeletonVertexSimple.glsl", SHADERDIR"TexturedFragment.glsl");
 #else
 	currentShader   = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 #endif
@@ -43,23 +42,22 @@ Renderer::~Renderer(void)	{
 	hellNode->Update(msec);
 }
 
-void Renderer::RenderScene()	{
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+ void Renderer::RenderScene() {
+	 glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	glUseProgram(currentShader->GetProgram());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	 glUseProgram(currentShader->GetProgram());
+	 glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 
-	UpdateShaderMatrices();
+	 UpdateShaderMatrices();
 
-	for(int y = 0; y < 10; ++y) {
-		for(int x = 0; x < 10; ++x) {
-			modelMatrix = Matrix4::Translation(Vector3(x * 100, 0, y * 100));
-			UpdateShaderMatrices();	
-			hellNode->Draw(*this);
-		}
-	}
+	 for (int y = 0; y < 10; ++y) {
+		 for (int x = 0; x < 10; ++x) {
+			 modelMatrix = Matrix4::Translation(Vector3(x * 100, 0, y * 100));
+			 UpdateShaderMatrices();
+			 hellNode->Draw(*this);
+		 }
+	 }
 
-	glUseProgram(0);
-	SwapBuffers();
-}
-#endif
+	 glUseProgram(0);
+	 SwapBuffers();
+ }
