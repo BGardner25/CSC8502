@@ -18,6 +18,9 @@ public:
 protected:
 	void BufferData();
 
+	GLuint numIndices;
+	unsigned int* indices;
+
 	GLuint arrayObject;
 	GLuint bufferObject[MAX_BUFFER];
 	GLuint numVertices;
@@ -28,7 +31,4 @@ protected:
 
 	GLuint texture;
 	Vector2* textureCoords;
-
-	GLuint numIndices;
-	unsigned int* indices;
 };
