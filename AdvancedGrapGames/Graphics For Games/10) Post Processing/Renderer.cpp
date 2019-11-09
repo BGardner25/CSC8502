@@ -91,3 +91,48 @@ void Renderer::DrawScene() {
 	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+void Renderer::DrawPostProcess() {
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	SetCurrentShader(processShader);
+	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+	viewMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glUniform2f(glGetUniformLocation(currentShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+
+	for (int i = 0; i < POST_PASSES; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
+
+		quad->SetTexture(bufferColourTex[0]);
+		quad->Draw();
+
+		// next swap colour buffers and do second blur pass
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
+
+		quad->SetTexture(bufferColourTex[1]);
+		quad->Draw();
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::PresentScene() {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	SetCurrentShader(sceneShader);
+	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+	viewMatrix.ToIdentity();
+	UpdateShaderMatrices();
+	quad->SetTexture(bufferColourTex[0]);
+	quad->Draw();
+	glUseProgram(0);
+}

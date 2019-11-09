@@ -3,7 +3,7 @@
 #include"../nclgl/HeightMap.h"
 #include"../nclgl/Camera.h"
 
-#define POST_PASSES 10;
+constexpr auto POST_PASSES = 10;
 
 class Renderer : public OGLRenderer {
 public:
