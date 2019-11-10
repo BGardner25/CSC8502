@@ -21,7 +21,7 @@ HeightMap::HeightMap(std::string name) {
 			textureCoords[offset] = Vector2(x * HEIGHTMAP_TEX_X, z * HEIGHTMAP_TEX_Z);
 		}
 	}
-	delete data;
+	delete[] data;
 
 	numIndices = 0;
 
@@ -42,5 +42,6 @@ HeightMap::HeightMap(std::string name) {
 		}
 	}
 
+	GenerateNormals();
 	BufferData();
 }

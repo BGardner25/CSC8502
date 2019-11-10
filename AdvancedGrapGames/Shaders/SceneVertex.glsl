@@ -9,7 +9,7 @@ in vec3 position;
 in vec2 texCoord;
 
 out Vertex {
-    vec2 texCoord;
+    vec2 texCoord
     vec4 colour;
 } OUT;
 

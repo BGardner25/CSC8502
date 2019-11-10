@@ -9,5 +9,6 @@ in Vertex	{
 out vec4 gl_FragColor;
 
 void main(void)	{
-	gl_FragColor = IN.colour;
+	gl_FragColor = IN.col
+	our;
 }
