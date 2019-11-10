@@ -23,8 +23,8 @@ Mesh::~Mesh(void) {
 	delete[] vertices;
 	delete[] colours;
 	delete[] textureCoords;
-	delete[] indices;
 	delete[] normals;
+	delete[] indices;
 }
 
 void Mesh::Draw() {
@@ -93,7 +93,7 @@ void Mesh::GenerateNormals() {
 		normals[i] = Vector3();
 	// generate per vertex normals
 	if (indices) {
-		for (GLuint i = 0; i < numVertices; i += 3) {
+		for (GLuint i = 0; i < numIndices; i += 3) {
 			unsigned int a = indices[i];
 			unsigned int b = indices[i + 1];
 			unsigned int c = indices[i + 2];
