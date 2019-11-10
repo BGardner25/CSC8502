@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera(0.0f, 135.0f, Vector3(0, 500, 0));
+	camera = new Camera(0.0f, 230.0f, Vector3(0, 500, 0));
 	quad = Mesh::GenerateQuad();
 
 	heightMap = new HeightMap(TEXTUREDIR"terrain.raw");
@@ -87,6 +87,8 @@ void Renderer::DrawScene() {
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 
 	UpdateShaderMatrices();
+
+	heightMap->Draw();
 
 	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
