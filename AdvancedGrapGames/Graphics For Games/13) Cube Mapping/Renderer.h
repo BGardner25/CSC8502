@@ -21,7 +21,7 @@ protected:
 	Shader* skyboxShader;
 
 	HeightMap* heightMap;
-	Mesh* quad;
+	Mesh* quad;				// for water
 
 	Light* light;
 	Camera* camera;
