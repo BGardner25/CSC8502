@@ -4,7 +4,7 @@
 #include "Renderer.h"
 
 int main() {
-	Window w("Deferred Rendering!", 1280, 720, false);
+	Window w("Coursework!", 1280, 720, false);
 	if (!w.HasInitialised()) {
 		return -1;
 	}
