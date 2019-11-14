@@ -87,7 +87,7 @@ void Renderer::DrawShadowScene() {
 	SetCurrentShader(shadowShader);
 
 	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
-	textureMatrix = biasMatrix * (projMatrix * viewMatrix);
+	shadowMatrix = biasMatrix * (projMatrix * viewMatrix);
 
 	UpdateShaderMatrices();
 
@@ -126,9 +126,9 @@ void Renderer::DrawCombinedScene() {
 void Renderer::DrawMesh() {
 	modelMatrix.ToIdentity();
 
-	Matrix4 tempMatrix = textureMatrix * modelMatrix;
+	Matrix4 tempMatrix = shadowMatrix * modelMatrix;
 
-	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "textureMatrix"), 1, false, *&tempMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "shadowMatrix"), 1, false, *&tempMatrix.values);
 	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, *&modelMatrix.values);
 
 	hellNode->Draw(*this);
@@ -137,9 +137,9 @@ void Renderer::DrawMesh() {
 void Renderer::DrawFloor() {
 	modelMatrix = Matrix4::Rotation(90, Vector3(1, 0, 0)) *
 					Matrix4::Scale(Vector3(450, 450, 1));
-	Matrix4 tempMatrix = textureMatrix * modelMatrix;
+	Matrix4 tempMatrix = shadowMatrix * modelMatrix;
 
-	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "textureMatrix"), 1, false, *&tempMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "shadowMatrix"), 1, false, *&tempMatrix.values);
 	glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, *&modelMatrix.values);
 
 	floor->Draw();

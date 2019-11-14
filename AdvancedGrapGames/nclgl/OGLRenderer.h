@@ -127,7 +127,7 @@ protected:
 
 	Shader* currentShader;
 	
-
+	
 	Matrix4 projMatrix;		//Projection matrix
 	Matrix4 modelMatrix;	//Model matrix. NOT MODELVIEW
 	Matrix4 viewMatrix;		//View matrix
@@ -136,6 +136,8 @@ protected:
 	int		width;			//Render area width (not quite the same as window width)
 	int		height;			//Render area height (not quite the same as window height)
 	bool	init;			//Did the renderer initialise properly?
+
+	Matrix4 shadowMatrix;	//Shadow matrix
 
 	HDC		deviceContext;	//...Device context?
 	HGLRC	renderContext;	//Permanent Rendering Context
@@ -153,5 +155,4 @@ protected:
 
 	static bool	drawnDebugOrtho;
 	static bool	drawnDebugPerspective;
-
 };
