@@ -2,6 +2,7 @@
 #include "../nclgl/OGLRenderer.h"
 #include "../nclgl/Camera.h"
 #include "../nclgl/HeightMap.h"
+#include "HeightMapPNG.h"
 
 class Renderer : public OGLRenderer {
 public:
@@ -20,7 +21,7 @@ protected:
 	Shader* reflectShader;
 	Shader* skyboxShader;
 
-	HeightMap* heightMap;
+	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
 
 	Light* light;

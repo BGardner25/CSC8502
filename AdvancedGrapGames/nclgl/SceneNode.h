@@ -17,6 +17,9 @@ public:
 	Vector4 GetColour() const { return colour; }
 	void SetColour(Vector4 c) { colour = c; }
 
+	GLuint GetTexture() const { return texture; }
+	void SetTexture(GLuint tex) { texture = tex; }
+
 	Vector3 GetModelScale() const { return modelScale; }
 	void SetModelScale(Vector3 s) { modelScale = s; }
 
@@ -24,6 +27,7 @@ public:
 	void SetMesh(Mesh* m) { mesh = m; }
 
 	void AddChild(SceneNode* s);
+	void DeleteChild(SceneNode* s);
 
 	virtual void Update(float msec);
 	virtual void Draw(const OGLRenderer& r);
@@ -47,6 +51,7 @@ protected:
 	Matrix4 transform;
 	Vector3 modelScale;
 	Vector4 colour;
+	GLuint texture;
 	std::vector<SceneNode*> children;
 
 	float distanceFromCamera;
