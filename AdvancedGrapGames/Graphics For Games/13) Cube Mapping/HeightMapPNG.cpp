@@ -12,17 +12,16 @@ HeightMapPNG::HeightMapPNG(string name) {
 
 	for (int x = 0; x < RAW_WIDTH; ++x) {
 		for (int z = 0; z < RAW_HEIGHT; ++z) {
+			int offset = (x * RAW_WIDTH) + z;
 			float fX = float(x) / (RAW_WIDTH / float(size - 1));
 			float fY = float(z) / (RAW_WIDTH / float(size - 1));
-			int offset = (x * RAW_WIDTH) + z;
-
+			
 			int iX = (int)fX;
 			int iY = (int)fY;
 			vertices[offset] = Vector3(	x * HEIGHTMAP_X,
-												(data[3 * (iX * size + iY)]
-												+ data[3 * ((iX + 1) * size + iY)]
-												+ data[3 * (iX * size + (iY + 1))]
-												+ data[3 * ((iX + 1) * size + (iY + 1))]) * HEIGHTMAP_Y,
+												(data[3 * (iX * size + iY)] + data[3 * ((iX + 1) * size + iY)]
+												+ data[3 * (iX * size + (iY + 1))] + data[3 * ((iX + 1) * size + (iY + 1))]) 
+												* HEIGHTMAP_Y,
 										z * HEIGHTMAP_Z);
 			textureCoords[offset] = Vector2(x * HEIGHTMAP_TEX_X, z * HEIGHTMAP_TEX_Z);
 		}

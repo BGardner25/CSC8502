@@ -136,16 +136,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMapPNG(TEXTUREDIR"Heightmap.png");
 	quad = Mesh::GenerateQuad();
 
-	camera->SetPosition(Vector3(RAW_WIDTH * HEIGHTMAP_X / 2.0f, 500.0f, RAW_WIDTH * HEIGHTMAP_X));
+	camera->SetPosition(Vector3(RAW_WIDTH * HEIGHTMAP_X / 2.0f, 850.0f, RAW_WIDTH * HEIGHTMAP_X - 4000));
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 500.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) / 2.0);
 
-	//reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
+	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
 
-	if (!skyboxShader->LinkProgram() || !lightShader->LinkProgram())
+	if (!skyboxShader->LinkProgram() || !lightShader->LinkProgram() || !reflectShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -164,9 +164,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(heightMap->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetBumpMap(), true);
 
-	//waterRotate = 0.0f;
+	waterRotate = 0.0f;
 
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -179,7 +179,7 @@ Renderer::~Renderer(void) {
 	delete camera;
 	delete heightMap;
 	delete quad;
-	//delete reflectShader;
+	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
 	delete light;
@@ -189,7 +189,7 @@ Renderer::~Renderer(void) {
 void Renderer::UpdateScene(float msec) {
 	camera->UpdateCamera(msec);
 	viewMatrix = camera->BuildViewMatrix();
-	//waterRotate += msec / 1000.0f;
+	waterRotate += msec / 1000.0f;
 }
 
 void Renderer::RenderScene() {
@@ -197,7 +197,7 @@ void Renderer::RenderScene() {
 
 	DrawSkybox();
 	DrawHeightMap();
-	//DrawWater();
+	DrawWater();
 
 	SwapBuffers();
 }
@@ -243,7 +243,7 @@ void Renderer::DrawWater() {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	float heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
-	float heightY = 256 * HEIGHTMAP_Y / 3.0f;
+	float heightY = (RAW_WIDTH - 1) * HEIGHTMAP_Y / 4.0f;
 	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
 
 	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *

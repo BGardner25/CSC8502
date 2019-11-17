@@ -1,7 +1,6 @@
 #pragma once
 #include "../nclgl/OGLRenderer.h"
 #include "../nclgl/Camera.h"
-#include "../nclgl/HeightMap.h"
 #include "HeightMapPNG.h"
 
 class Renderer : public OGLRenderer {
