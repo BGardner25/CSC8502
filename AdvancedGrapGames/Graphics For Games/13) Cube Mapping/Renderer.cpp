@@ -143,7 +143,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
-	lightShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	lightShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 
 	if (!skyboxShader->LinkProgram() || !lightShader->LinkProgram() || !reflectShader->LinkProgram())
 		return;
@@ -151,18 +151,22 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetTextureTwo(SOIL_load_OGL_texture(TEXTUREDIR"brick.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetBumpMapTwo(SOIL_load_OGL_texture(TEXTUREDIR"brickDOT3.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg",
 									TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg",
 									TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg",
 									SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap())
+	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetTextureTwo() || !heightMap->GetBumpMap() || !heightMap->GetBumpMapTwo())
 		return;
 
 	SetTextureRepeating(quad->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetBumpMap(), true);
+	SetTextureRepeating(heightMap->GetTextureTwo(), true);
+	SetTextureRepeating(heightMap->GetBumpMapTwo(), true);
 
 	waterRotate = 0.0f;
 
@@ -220,6 +224,8 @@ void Renderer::DrawHeightMap() {
 	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "textureTwo"), 2);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureTwo"), 3);
 
 	modelMatrix.ToIdentity();
 	textureMatrix.ToIdentity();

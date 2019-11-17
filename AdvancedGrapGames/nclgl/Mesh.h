@@ -21,6 +21,11 @@ public:
 	void SetBumpMap(GLuint tex) { bumpTexture = tex; }
 	GLuint GetBumpMap() { return bumpTexture; }
 
+	void SetTextureTwo(GLuint tex) { textureTwo = tex; }
+	GLuint GetTextureTwo() { return textureTwo; }
+	void SetBumpMapTwo(GLuint tex) { bumpTextureTwo = tex; }
+	GLuint GetBumpMapTwo() { return bumpTextureTwo; }
+
 protected:
 	void GenerateNormals();
 	void GenerateTangents();
@@ -44,4 +49,7 @@ protected:
 	GLuint texture;
 	GLuint bumpTexture;
 	Vector2* textureCoords;
+
+	GLuint textureTwo;
+	GLuint bumpTextureTwo;
 };
