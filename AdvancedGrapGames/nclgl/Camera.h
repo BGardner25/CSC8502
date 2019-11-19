@@ -17,6 +17,13 @@ _-_-_-_-_-_-_-""  ""
 #include "Matrix4.h"
 #include "Vector3.h"
 
+struct SplineSegment {
+	Vector3 a;
+	Vector3 b;
+	Vector3 c;
+	Vector3 d;
+};
+
 class Camera {
 public:
 	Camera(void){
@@ -52,6 +59,8 @@ public:
 	float	GetPitch() const { return pitch;}
 	//Sets pitch, in degrees
 	void	SetPitch(float p) {pitch = p;}
+
+	Vector3 GetSegmentPosition(float msec);
 
 protected:
 	float	yaw;

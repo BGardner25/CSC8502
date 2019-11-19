@@ -4,9 +4,11 @@ uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat4 textureMatrix;
 
+uniform float heightVal;
+
 in vec3 position;
 in vec4 colour;
-in vec3 normal; // New Attribute !
+in vec3 normal;
 in vec2 texCoord;
 
 out Vertex {
@@ -24,7 +26,7 @@ void main (void) {
 
     OUT.normal = normalize(normalMatrix * normalize(normal));
 
-
     OUT.worldPos = (modelMatrix * vec4(position,1)).xyz;
-    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(position , 1.0);
+	// slowly raises terrain from the ground
+    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x, position.y * clamp(heightVal, 0.0, 1.0), position.z), 1.0);
 }

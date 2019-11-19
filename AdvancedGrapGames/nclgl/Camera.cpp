@@ -56,3 +56,8 @@ Matrix4 Camera::BuildViewMatrix()	{
 			Matrix4::Rotation(-yaw, Vector3(0,1,0)) * 
 			Matrix4::Translation(-position);
 };
+
+
+Vector3 Camera::GetSegmentPosition(float msec) {
+	return Vector3(0, 0, 0);
+}

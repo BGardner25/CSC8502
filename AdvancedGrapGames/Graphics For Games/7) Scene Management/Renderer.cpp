@@ -50,6 +50,23 @@ void Renderer::UpdateScene(float msec) {
 	root->Update(msec);
 }
 
+void Renderer::RenderScene() {
+	BuildNodeLists(root);
+	SortNodeLists();
+
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	glUseProgram(currentShader->GetProgram());
+	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	DrawNodes();
+
+	glUseProgram(0);
+	SwapBuffers();
+	ClearNodeLists();
+}
+
 void Renderer::BuildNodeLists(SceneNode* from) {
 	if (frameFrustum.InsideFrustum(*from)) {
 		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
@@ -85,23 +102,6 @@ void Renderer::DrawNode(SceneNode* n) {
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "useTexture"), (int)n->GetMesh()->GetTexture());
 		n->Draw(*this);
 	}
-}
-
-void Renderer::RenderScene() {
-	BuildNodeLists(root);
-	SortNodeLists();
-
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-	glUseProgram(currentShader->GetProgram());
-	UpdateShaderMatrices();
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	DrawNodes();
-
-	glUseProgram(0);
-	SwapBuffers();
-	ClearNodeLists();
 }
 
 void Renderer::ClearNodeLists() {

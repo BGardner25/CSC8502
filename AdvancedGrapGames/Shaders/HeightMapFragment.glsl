@@ -1,7 +1,8 @@
 #version 150 core
 
 uniform sampler2D diffuseTex;
-uniform sampler2D textureTwo;
+uniform sampler2D texGrass;
+uniform sampler2D texSnow;
 
 uniform vec3 cameraPos;
 uniform vec4 lightColour;
@@ -16,14 +17,35 @@ in Vertex {
 } IN;
 
 out vec4 fragColour;
+
+// blend function sourced from Andrey Mishkinis: https://www.gamasutra.com/blogs/AndreyMishkinis/20130716/196339/Advanced_Terrain_Texture_Splatting.php
+// Last accessed 19/11/2019
+vec3 blendTex(vec4 t0, float a0, vec4 t1, float a1) {
+	float depth = 0.2;
+	float ma = max(t0.a + a0, t1.a + a1) - depth;
+
+	float b0 = max(t0.a + a0 - ma, 0);
+	float b1 = max(t1.a + a1 - ma, 0);
+
+	return (t0.rgb * b0 + t1.rgb * b1) / (b0 + b1);
+}
+
 void main (void) {
+	float gradient = clamp((dot(normalize(IN.normal), vec3(0, 1, 0)) - 0.5), 0.0, 1.0);
+
+	// blends the rock and grass textures with rock being applied to steeper gradients
+	vec3 blendRockGrass = blendTex(texture(diffuseTex, IN.texCoord), 0.2, texture(texGrass, IN.texCoord), gradient);
+	vec3 blendRockSnow = blendTex(vec4(blendRockGrass, 1.0), 0.1, texture(texSnow, IN.texCoord), gradient);
+
 	vec4 diffuse = vec4(0, 0, 0, 0);
-	if(IN.worldPos.y < 1200) {
-		diffuse = texture(textureTwo, IN.texCoord);
-	}
-	else {
-		diffuse = texture(diffuseTex, IN.texCoord);
-	}
+	//if(IN.worldPos.y < 1400) {
+		//diffuse.rgb = blendRockGrass;
+	//}
+	//else {
+		//diffuse.rgb = blendRockSnow;
+	//}
+	diffuse.rgb = blendRockGrass;
+	diffuse.a = 1.0;
 
     vec3 incident = normalize(lightPos - IN.worldPos);
     float lambert = max(0.0, dot(incident, IN.normal));

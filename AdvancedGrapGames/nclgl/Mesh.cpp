@@ -9,8 +9,10 @@ Mesh::Mesh(void) {
 	numIndices = 0;
 	texture = 0;
 	textureTwo = 0;
+	textureThree = 0;
 	bumpTexture = 0;
 	bumpTextureTwo = 0;
+	bumpTextureThree = 0;
 	vertices = NULL;
 	colours = NULL;
 	textureCoords = NULL;
@@ -27,6 +29,8 @@ Mesh::~Mesh(void) {
 	glDeleteTextures(1, &bumpTexture);
 	glDeleteTextures(1, &textureTwo);
 	glDeleteTextures(1, &bumpTextureTwo);
+	glDeleteTextures(1, &textureThree);
+	glDeleteTextures(1, &bumpTextureThree);
 	delete[] vertices;
 	delete[] colours;
 	delete[] textureCoords;
@@ -44,6 +48,10 @@ void Mesh::Draw() {
 	glBindTexture(GL_TEXTURE_2D, textureTwo);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, bumpTextureTwo);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, textureThree);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, bumpTextureThree);
 
 	glBindVertexArray(arrayObject);
 	if (bufferObject[INDEX_BUFFER])

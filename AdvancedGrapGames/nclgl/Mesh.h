@@ -25,6 +25,10 @@ public:
 	GLuint GetTextureTwo() { return textureTwo; }
 	void SetBumpMapTwo(GLuint tex) { bumpTextureTwo = tex; }
 	GLuint GetBumpMapTwo() { return bumpTextureTwo; }
+	void SetTextureThree(GLuint tex) { textureThree = tex; }
+	GLuint GetTextureThree() { return textureThree; }
+	void SetBumpMapThree(GLuint tex) { bumpTextureThree = tex; }
+	GLuint GetBumpMapThree() { return bumpTextureThree; }
 
 protected:
 	void GenerateNormals();
@@ -52,4 +56,7 @@ protected:
 
 	GLuint textureTwo;
 	GLuint bumpTextureTwo;
+
+	GLuint textureThree;
+	GLuint bumpTextureThree;
 };
