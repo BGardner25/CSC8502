@@ -17,7 +17,16 @@ int main() {
 	w.LockMouseToWindow(true);
 	w.ShowOSPointer(false);
 
+	bool isWireFrame = false;
+	
 	while(w.UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
+		w.GetTimer()->GetTimedMS();
+		
+		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_INSERT)) {
+			isWireFrame = !isWireFrame;
+			isWireFrame ? glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) : glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
 		renderer.UpdateScene(w.GetTimer()->GetTimedMS());
 		renderer.RenderScene();
 	}

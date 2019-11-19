@@ -3,6 +3,7 @@
 #include "../nclgl/Camera.h"
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/Frustum.h"
+#include "../nclgl/OBJMesh.h"
 #include "HeightMapPNG.h"
 #include <algorithm>
 
@@ -24,6 +25,7 @@ protected:
 	void DrawHeightMap();
 	void DrawWater();
 	void DrawSkybox();
+	void DrawCylinder();
 
 	SceneNode* rootNode;
 
@@ -43,9 +45,12 @@ protected:
 	Camera* camera;
 
 	GLuint cubeMap;
-	float waterRotate;
-	float heightVal;
+	float waterRotate;		// to animate water
+	float heightVal;		// to raise terrain
+	float totalTime = 0.0f;
+	const Vector3 START_POS = Vector3(19210.0f, 981.0f, 34512.0f);
 
-	GameTimer gameTimer;
+	OBJMesh* cylinder;
+	Shader* cylinderShader;
 };
 
