@@ -14,6 +14,9 @@ public:
 	const Matrix4& GetTransform() const { return transform; }
 	Matrix4 GetWorldTransform() const { return worldTransform; }
 
+	void SetTextureMatrix(const Matrix4& tMatrix) { textureMatrix = tMatrix; }
+	Matrix4 GetTextureMatrix() const { return textureMatrix; }
+
 	Vector4 GetColour() const { return colour; }
 	void SetColour(Vector4 c) { colour = c; }
 
@@ -30,7 +33,6 @@ public:
 	void SetShader(Shader* s) { shader = s; }
 
 	void AddChild(SceneNode* s);
-	void DeleteChild(SceneNode* s);
 
 	virtual void Update(float msec);
 	virtual void Draw(const OGLRenderer& r);
@@ -60,5 +62,8 @@ protected:
 
 	float distanceFromCamera;
 	float boundingRadius;
+
+	Matrix4 textureMatrix;
+	Matrix4 rotation;
 };
 

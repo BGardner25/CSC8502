@@ -28,6 +28,7 @@ protected:
 	void DrawHeightMap();
 	void DrawWater();
 	void DrawCylinder();
+	void DrawCylinderPointLight();
 
 	SceneNode* rootNode;
 
@@ -40,11 +41,13 @@ protected:
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
+	Shader* pointLightShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
 
 	Light* light;
+	Light* pointLightCylinder;
 	Camera* camera;
 
 	GLuint cubeMap;

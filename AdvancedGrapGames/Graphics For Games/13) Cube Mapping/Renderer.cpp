@@ -141,15 +141,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
+	pointLightCylinder = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 20.0f);
 
 	fontShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
+	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
-			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram())
+			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !pointLightShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -186,8 +188,19 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	rootNode = new SceneNode();
 
-	SceneNode* water = new SceneNode();
-	water->SetMesh(quad);
+	/*SceneNode* water = new SceneNode();
+	water->SetShader(reflectShader);
+	water->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	water->SetBoundingRadius(80000.0f);
+	water->SetMesh(quad);*/
+
+	SceneNode* cylinderNode = new SceneNode();
+	cylinderNode->SetShader(cylinderShader);
+	cylinderNode->SetBoundingRadius(10000.0f);
+	cylinderNode->SetTransform(Matrix4::Translation(Vector3(18604.0f, 500.0f, 26643.50f)));
+	cylinderNode->SetModelScale(Vector3(1000.0f, 1500.0f, 1000.0f));
+	cylinderNode->SetMesh(cylinder);
+	rootNode->AddChild(cylinderNode);
 
 	heightVal = 0.0f;
 	waterRotate = 0.0f;
@@ -220,13 +233,17 @@ Renderer::~Renderer(void) {
 	delete skyboxShader;
 	delete lightShader;
 	delete cylinderShader;
+	delete pointLightShader;
 	delete light;
+	delete pointLightCylinder;
 	currentShader = 0;
 }
 
 void Renderer::UpdateScene(float msec) {
 	camera->UpdateCamera(msec);
 	viewMatrix = camera->BuildViewMatrix();
+	frameFrustum.FromMatrix(projMatrix * viewMatrix);
+	rootNode->Update(msec);
 	waterRotate += msec / 1000.0f;
 	heightVal += msec / 15000.0f;
 	totalTime += msec;
@@ -245,15 +262,20 @@ void Renderer::UpdateScene(float msec) {
 }
 
 void Renderer::RenderScene() {
+	BuildNodeLists(rootNode);
+	SortNodeLists();
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	
 	DrawSkybox();
 	DrawHeightMap();
 	DrawWater();
-	DrawCylinder();
-	DrawUI();
+
+	DrawNodes();
+	//DrawCylinder();
+	//DrawUI();
+	glUseProgram(0);
 	SwapBuffers();
+	ClearNodeLists();
 }
 
 void Renderer::BuildNodeLists(SceneNode* from) {
@@ -285,10 +307,24 @@ void Renderer::DrawNodes() {
 
 void Renderer::DrawNode(SceneNode* n) {
 	if (n->GetMesh()) {
+		SetCurrentShader(n->GetShader());
+		// different light for shadow mapping i.e. point light?
+		SetShaderLight(*light);
+		
+		glUseProgram(currentShader->GetProgram());
+		//UpdateShaderMatrices();
+		textureMatrix = n->GetTextureMatrix();
+		UpdateShaderMatrices();
+		// setup all needed uniforms
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 1);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 2);
+		glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
+		glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false,
 													(float*)&(n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale())));
-		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "useTexture"), (int)n->GetMesh()->GetTexture());
+		
 		n->Draw(*this);
 	}
 }
@@ -391,6 +427,13 @@ void Renderer::DrawCylinder() {
 	cylinder->Draw();
 
 	glUseProgram(0);
+}
+
+void Renderer::DrawCylinderPointLight() {
+	SetCurrentShader(pointLightShader);
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 4);
 }
 
 void Renderer::DrawText(const std::string& text, const Vector3& position, const float size, const bool perspective) {

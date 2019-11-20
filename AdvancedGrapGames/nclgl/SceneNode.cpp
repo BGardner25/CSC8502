@@ -4,10 +4,12 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	this->mesh = mesh;
 	this->colour = colour;
 	texture = 0;
+	shader = 0;
 	parent = NULL;
 	modelScale = Vector3(1, 1, 1);
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;
+	textureMatrix.ToIdentity();
 }
 
 SceneNode::~SceneNode(void) {
@@ -19,13 +21,6 @@ SceneNode::~SceneNode(void) {
 void SceneNode::AddChild(SceneNode* s) {
 	children.push_back(s);
 	s->parent = this;
-}
-
-void SceneNode::DeleteChild(SceneNode* s) {
-	// will this cause an issue with parent nodes?
-	vector<SceneNode*>::iterator it = find(children.begin(), children.end(), s);
-	if (it != children.end())
-		children.erase(it);
 }
 
 void SceneNode::Draw(const OGLRenderer& r) {
