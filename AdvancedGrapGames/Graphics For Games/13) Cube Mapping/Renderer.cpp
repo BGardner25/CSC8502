@@ -144,7 +144,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
-	cylinderShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
 
 	if (!skyboxShader->LinkProgram() || !lightShader->LinkProgram() || !reflectShader->LinkProgram() || !cylinderShader->LinkProgram())
 		return;
@@ -170,7 +170,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	if (!cylinder->LoadOBJMesh(MESHDIR"cylinder.obj"))
 		return;
 	
-	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"rock_stones.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	SetTextureRepeating(quad->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetTexture(), true);
@@ -192,7 +192,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
 	glEnable(GL_DEPTH_TEST);
-	// this deletes cube map for some reason
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
@@ -219,7 +218,7 @@ void Renderer::UpdateScene(float msec) {
 	camera->UpdateCamera(msec);
 	viewMatrix = camera->BuildViewMatrix();
 	waterRotate += msec / 1000.0f;
-	heightVal += msec / 10000.0f;
+	heightVal += msec / 15000.0f;
 	totalTime += msec;
 	if (totalTime >= 1000.0f)
 		cout << camera->GetPosition(), totalTime = 0;
@@ -349,9 +348,10 @@ void Renderer::DrawCylinder() {
 
 	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
 
-	modelMatrix = Matrix4::Translation(Vector3(RAW_WIDTH * HEIGHTMAP_X * 0.5 + 4000, (RAW_WIDTH - 1) * HEIGHTMAP_Y * 0.5, RAW_HEIGHT * HEIGHTMAP_Z * 0.5)) * 
-					Matrix4::Scale(Vector3(200, 200, 200));
+	modelMatrix = Matrix4::Translation(Vector3(18604, 500, 26643.5)) *
+					Matrix4::Scale(Vector3(1000, 1500, 1000));
 	textureMatrix.ToIdentity();
 
 	UpdateShaderMatrices();
