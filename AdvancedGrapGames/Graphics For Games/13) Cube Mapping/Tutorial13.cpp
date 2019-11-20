@@ -20,7 +20,6 @@ int main() {
 	bool isWireFrame = false;
 	
 	while(w.UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
-		w.GetTimer()->GetTimedMS();
 		
 		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_INSERT)) {
 			isWireFrame = !isWireFrame;

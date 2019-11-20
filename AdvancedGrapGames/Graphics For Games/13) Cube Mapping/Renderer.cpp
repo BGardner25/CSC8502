@@ -192,7 +192,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
 	glEnable(GL_DEPTH_TEST);
+	// this deletes cube map for some reason
 	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -279,12 +281,14 @@ void Renderer::ClearNodeLists() {
 void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
 	SetCurrentShader(skyboxShader);
+	glCullFace(GL_FRONT);
 
 	UpdateShaderMatrices();
 	quad->Draw();
-
+	
 	glUseProgram(0);
 	glDepthMask(GL_TRUE);
+	glCullFace(GL_BACK);
 }
 
 void Renderer::DrawHeightMap() {

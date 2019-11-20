@@ -22,9 +22,9 @@ protected:
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
 
+	void DrawSkybox();
 	void DrawHeightMap();
 	void DrawWater();
-	void DrawSkybox();
 	void DrawCylinder();
 
 	SceneNode* rootNode;
@@ -45,6 +45,7 @@ protected:
 	Camera* camera;
 
 	GLuint cubeMap;
+
 	float waterRotate;		// to animate water
 	float heightVal;		// to raise terrain
 	float totalTime = 0.0f;
