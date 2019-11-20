@@ -4,6 +4,7 @@
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/Frustum.h"
 #include "../nclgl/OBJMesh.h"
+#include "../nclgl/TextMesh.h"
 #include "HeightMapPNG.h"
 #include <algorithm>
 
@@ -21,7 +22,8 @@ protected:
 	void ClearNodeLists();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
-
+	
+	void DrawUI();
 	void DrawSkybox();
 	void DrawHeightMap();
 	void DrawWater();
@@ -34,6 +36,7 @@ protected:
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
 
+	Shader* fontShader;
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
@@ -53,5 +56,15 @@ protected:
 
 	OBJMesh* cylinder;
 	Shader* cylinderShader;
+
+	void DrawText(const std::string& text, const Vector3& position, const float size = 10.0f, const bool perspective = false);
+	Font* basicFont;
+
+	Window* w;
+	float fps;
+	float lastTime;
+	float currentTime;
+	float timePassed;
+	float frames;
 };
 

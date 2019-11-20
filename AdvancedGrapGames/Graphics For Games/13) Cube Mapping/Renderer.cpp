@@ -133,6 +133,7 @@ void Renderer::DrawWater() {
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camera = new Camera();
+	basicFont = new Font(SOIL_load_OGL_texture(TEXTUREDIR"tahoma.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 16, 16);
 	heightMap = new HeightMapPNG(TEXTUREDIR"heightmap512.jpg");
 	quad = Mesh::GenerateQuad();
 
@@ -141,12 +142,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
 
+	fontShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
 
-	if (!skyboxShader->LinkProgram() || !lightShader->LinkProgram() || !reflectShader->LinkProgram() || !cylinderShader->LinkProgram())
+	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
+			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -188,6 +191,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	heightVal = 0.0f;
 	waterRotate = 0.0f;
+	w = &parent;
+	fps = 0.0f;
+	lastTime = 0.0f;
+	currentTime = 0.0f;
+	timePassed = 0.0f;
+	frames = 0.0f;
 
 	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
@@ -206,6 +215,7 @@ Renderer::~Renderer(void) {
 	delete heightMap;
 	delete quad;
 	delete cylinder;
+	delete fontShader;
 	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
@@ -222,16 +232,27 @@ void Renderer::UpdateScene(float msec) {
 	totalTime += msec;
 	if (totalTime >= 1000.0f)
 		cout << camera->GetPosition(), totalTime = 0;
+
+	lastTime = w->GetTimer()->GetMS();
+	frames++;
+	timePassed += (lastTime - currentTime);
+	if (timePassed >= 1000.0f) {
+		fps = frames;
+		frames = 0.0f;
+		timePassed = 0.0f;
+	}
+	currentTime = w->GetTimer()->GetMS();
 }
 
 void Renderer::RenderScene() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+	
 	DrawSkybox();
 	DrawHeightMap();
 	DrawWater();
 	DrawCylinder();
-
+	DrawUI();
 	SwapBuffers();
 }
 
@@ -275,6 +296,17 @@ void Renderer::DrawNode(SceneNode* n) {
 void Renderer::ClearNodeLists() {
 	transparentNodeList.clear();
 	nodeList.clear();
+}
+
+void Renderer::DrawUI() {
+	SetCurrentShader(fontShader);
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+
+	DrawText("FPS: " + to_string(fps), Vector3(0.0f, 0.0f, 0.0f), 16.0f);
+
+	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
+	glUseProgram(0);
 }
 
 void Renderer::DrawSkybox() {
@@ -350,8 +382,8 @@ void Renderer::DrawCylinder() {
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
 
-	modelMatrix = Matrix4::Translation(Vector3(18604, 500, 26643.5)) *
-					Matrix4::Scale(Vector3(1000, 1500, 1000));
+	modelMatrix = Matrix4::Translation(Vector3(18604.0f, 500.0f, 26643.50f)) *
+					Matrix4::Scale(Vector3(1000.0f, 1500.0f, 1000.0f));
 	textureMatrix.ToIdentity();
 
 	UpdateShaderMatrices();
@@ -359,4 +391,30 @@ void Renderer::DrawCylinder() {
 	cylinder->Draw();
 
 	glUseProgram(0);
+}
+
+void Renderer::DrawText(const std::string& text, const Vector3& position, const float size, const bool perspective) {
+	//Create a new temporary TextMesh, using our line of text and our font
+	TextMesh* mesh = new TextMesh(text, *basicFont);
+
+	//This just does simple matrix setup to render in either perspective or
+	//orthographic mode, there's nothing here that's particularly tricky.
+	if (perspective) {
+		modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(size, size, 1));
+		viewMatrix = camera->BuildViewMatrix();
+		projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	}
+	else {
+		//In ortho mode, we subtract the y from the height, so that a height of 0
+		//is at the top left of the screen, which is more intuitive
+		//(for me anyway...)
+		modelMatrix = Matrix4::Translation(Vector3(position.x, height - position.y, position.z)) * Matrix4::Scale(Vector3(size, size, 1));
+		viewMatrix.ToIdentity();
+		projMatrix = Matrix4::Orthographic(-1.0f, 1.0f, (float)width, 0.0f, (float)height, 0.0f);
+	}
+	//Either way, we update the matrices, and draw the mesh
+	UpdateShaderMatrices();
+	mesh->Draw();
+
+	delete mesh; //Once it's drawn, we don't need it anymore!
 }
