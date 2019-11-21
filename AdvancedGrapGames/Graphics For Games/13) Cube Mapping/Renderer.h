@@ -28,7 +28,12 @@ protected:
 	void DrawHeightMap();
 	void DrawWater();
 	void DrawCylinder();
-	void DrawCylinderPointLight();
+	void DrawPointLight();
+	void FillBuffers();
+	void CombineBuffers();
+
+	void GenerateScreenTexture(GLuint& into, bool depth = false);
+	void SetupPointLights();
 
 	SceneNode* rootNode;
 
@@ -41,13 +46,15 @@ protected:
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
+	Shader* sceneShader;
+	Shader* combineShader;
 	Shader* pointLightShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
 
 	Light* light;
-	Light* pointLightCylinder;
+	Light* pointLight;
 	Camera* camera;
 
 	GLuint cubeMap;
@@ -59,6 +66,7 @@ protected:
 
 	OBJMesh* cylinder;
 	Shader* cylinderShader;
+	OBJMesh* lightObj;
 
 	void DrawText(const std::string& text, const Vector3& position, const float size = 10.0f, const bool perspective = false);
 	Font* basicFont;
@@ -69,5 +77,16 @@ protected:
 	float currentTime;
 	float timePassed;
 	float frames;
+
+	float rotation;
+
+	GLuint bufferFBO;				// FBO for g-buffer pass
+	GLuint bufferColourTex;			// albedo
+	GLuint bufferNormalTex;			// normals
+	GLuint bufferDepthTex;			// depth
+
+	GLuint pointLightFBO;			// FBO for lighting pass
+	GLuint lightEmissiveTex;		// store emissive lighting
+	GLuint lightSpecularTex;		// store specular lighting
 };
 

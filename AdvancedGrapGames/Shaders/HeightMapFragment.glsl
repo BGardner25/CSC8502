@@ -8,6 +8,7 @@ uniform vec3 cameraPos;
 uniform vec4 lightColour;
 uniform vec3 lightPos;
 uniform float lightRadius;
+uniform float randomVal;
 
 in Vertex {
     vec3 colour;
@@ -35,16 +36,16 @@ void main (void) {
 
 	// blends the rock and grass textures with rock being applied to steeper gradients
 	vec3 blendRockGrass = blendTex(texture(diffuseTex, IN.texCoord), 0.2, texture(texGrass, IN.texCoord), gradient);
-	vec3 blendRockSnow = blendTex(vec4(blendRockGrass, 1.0), 0.1, texture(texSnow, IN.texCoord), gradient);
+	vec3 blendRockSnow = blendTex(vec4(blendRockGrass, 1.0), 0.05, texture(texSnow, IN.texCoord), gradient);
 
 	vec4 diffuse = vec4(0, 0, 0, 0);
-	//if(IN.worldPos.y < 1400) {
-		//diffuse.rgb = blendRockGrass;
-	//}
-	//else {
-		//diffuse.rgb = blendRockSnow;
-	//}
-	diffuse.rgb = blendRockGrass;
+	if(IN.worldPos.y > 2600 && gradient > 0.12) {
+		diffuse.rgb = blendRockSnow + vec3(0.7,0.7,0.7);
+	}
+	else {
+		diffuse.rgb = blendRockGrass;
+	}
+	//diffuse.rgb = blendRockGrass;
 	diffuse.a = 1.0;
 
     vec3 incident = normalize(lightPos - IN.worldPos);

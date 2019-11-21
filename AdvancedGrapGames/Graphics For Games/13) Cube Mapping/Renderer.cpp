@@ -141,17 +141,20 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
-	pointLightCylinder = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 20.0f);
+	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 20.0f);
 
 	fontShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
+	sceneShader = new Shader(SHADERDIR"bumpVertex.glsl", SHADERDIR"bufferFragment.glsl");
+	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
-			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !pointLightShader->LinkProgram())
+			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !sceneShader->LinkProgram() 
+				|| !combineShader->LinkProgram() || !pointLightShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -159,23 +162,29 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetTextureTwo(SOIL_load_OGL_texture(TEXTUREDIR"WildGrass.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	//heightMap->SetBumpMapTwo(SOIL_load_OGL_texture(TEXTUREDIR"Ground_Grass_NORM.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetTextureThree(SOIL_load_OGL_texture(TEXTUREDIR"Snow.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	//heightMap->SetBumpMapThree(SOIL_load_OGL_texture(TEXTUREDIR"SnowBump.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetTextureThree(SOIL_load_OGL_texture(TEXTUREDIR"SnowLightCoverB_S.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetBumpMapThree(SOIL_load_OGL_texture(TEXTUREDIR"SnowLightCoverB_N.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg",
-									TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg",
-									TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg",
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"spires_rt.tga", TEXTUREDIR"spires_lf.tga",
+									TEXTUREDIR"spires_up.tga", TEXTUREDIR"spires_dn.tga",
+									TEXTUREDIR"spires_bk.tga", TEXTUREDIR"spires_ft.tga",
 									SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-
-	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap() 
-			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree())
-		return;
 
 	cylinder = new OBJMesh();
 	if (!cylinder->LoadOBJMesh(MESHDIR"cylinder.obj"))
 		return;
-	
+
+	lightObj = new OBJMesh();
+	if (!lightObj->LoadOBJMesh(MESHDIR"ico.obj"))
+		return;
+
 	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
+	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap()  || !heightMap->GetBumpMapThree()
+			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture())
+		return;
+
+	
 
 	SetTextureRepeating(quad->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetTexture(), true);
@@ -183,7 +192,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(heightMap->GetTextureTwo(), true);
 	//SetTextureRepeating(heightMap->GetBumpMapTwo(), true);
 	SetTextureRepeating(heightMap->GetTextureThree(), true);
-	//SetTextureRepeating(heightMap->GetBumpMapThree(), true);
+	SetTextureRepeating(heightMap->GetBumpMapThree(), true);
 	SetTextureRepeating(cylinder->GetTexture(), true);
 
 	rootNode = new SceneNode();
@@ -213,6 +222,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
+	SetupPointLights();
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -225,17 +236,23 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 Renderer::~Renderer(void) {
 	delete rootNode;
 	delete camera;
+
 	delete heightMap;
 	delete quad;
 	delete cylinder;
+	delete lightObj;
+
 	delete fontShader;
 	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
 	delete cylinderShader;
+	delete sceneShader;
+	delete combineShader;
 	delete pointLightShader;
+
 	delete light;
-	delete pointLightCylinder;
+	delete pointLight;
 	currentShader = 0;
 }
 
@@ -245,6 +262,7 @@ void Renderer::UpdateScene(float msec) {
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 	rootNode->Update(msec);
 	waterRotate += msec / 1000.0f;
+	rotation = msec * 0.01f;
 	heightVal += msec / 15000.0f;
 	totalTime += msec;
 	if (totalTime >= 1000.0f)
@@ -271,11 +289,163 @@ void Renderer::RenderScene() {
 	DrawWater();
 
 	DrawNodes();
-	//DrawCylinder();
-	//DrawUI();
+
+	//FillBuffers();
+	//DrawPointLight();
+	//CombineBuffers();
+
+	DrawUI();
 	glUseProgram(0);
 	SwapBuffers();
 	ClearNodeLists();
+}
+
+void Renderer::SetupPointLights() {
+	glGenFramebuffers(1, &bufferFBO);
+	glGenFramebuffers(1, &pointLightFBO);
+
+	GLenum buffers[2];
+	buffers[0] = GL_COLOR_ATTACHMENT0;
+	buffers[1] = GL_COLOR_ATTACHMENT1;
+
+	GenerateScreenTexture(bufferDepthTex, true);
+	GenerateScreenTexture(bufferColourTex);
+	GenerateScreenTexture(bufferNormalTex);
+	GenerateScreenTexture(lightEmissiveTex);
+	GenerateScreenTexture(lightSpecularTex);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightEmissiveTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::GenerateScreenTexture(GLuint& into, bool depth) {
+	glGenTextures(1, &into);
+	glBindTexture(GL_TEXTURE_2D, into);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0,
+		depth ? GL_DEPTH_COMPONENT : GL_RGBA8,
+		width, height, 0,
+		depth ? GL_DEPTH_COMPONENT : GL_RGBA,
+		GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Renderer::FillBuffers() {
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	SetCurrentShader(sceneShader);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
+
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	modelMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	heightMap->Draw();
+
+	glUseProgram(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::DrawPointLight() {
+	SetCurrentShader(pointLightShader);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 4);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform2f(glGetUniformLocation(currentShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+
+	Vector3 translate = Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 500, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f));
+
+	Matrix4 pushMatrix = Matrix4::Translation(translate);
+	Matrix4 popMatrix = Matrix4::Translation(-translate);
+
+	float radius = pointLight->GetRadius();
+
+	modelMatrix = pushMatrix *
+		Matrix4::Rotation(rotation, Vector3(0, 1, 0)) *
+		popMatrix *
+		Matrix4::Translation(pointLight->GetPosition()) *
+		Matrix4::Scale(Vector3(radius, radius, radius));
+
+	pointLight->SetPosition(modelMatrix.GetPositionVector());
+
+	SetShaderLight(*pointLight);
+
+	UpdateShaderMatrices();
+
+	float dist = (pointLight->GetPosition() - camera->GetPosition()).Length();
+	if (dist < radius)
+		glCullFace(GL_FRONT);
+	else
+		glCullFace(GL_BACK);
+
+	lightObj->Draw();
+
+	glCullFace(GL_BACK);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+}
+
+void Renderer::CombineBuffers() {
+	SetCurrentShader(combineShader);
+
+	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 2);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "emissiveTex"), 3);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specularTex"), 4);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, lightEmissiveTex);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
+
+	quad->Draw();
+
+	glUseProgram(0);
 }
 
 void Renderer::BuildNodeLists(SceneNode* from) {
@@ -427,13 +597,6 @@ void Renderer::DrawCylinder() {
 	cylinder->Draw();
 
 	glUseProgram(0);
-}
-
-void Renderer::DrawCylinderPointLight() {
-	SetCurrentShader(pointLightShader);
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 4);
 }
 
 void Renderer::DrawText(const std::string& text, const Vector3& position, const float size, const bool perspective) {
