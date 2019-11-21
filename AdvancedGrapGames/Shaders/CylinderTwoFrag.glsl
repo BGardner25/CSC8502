@@ -17,7 +17,7 @@ in Vertex {
 
 out vec4 fragColour;
 void main (void) {
-    vec4 diffuse = texture(diffuseTex, IN.texCoord) * vec4(1, 0, 0, heightVal);
+    vec4 diffuse = texture(diffuseTex, IN.texCoord) * vec4(1, heightVal * 0.7, 0, 1.0);
 
     vec3 incident = normalize(lightPos - IN.worldPos);
     float lambert = max(0.0, dot(incident, IN.normal));

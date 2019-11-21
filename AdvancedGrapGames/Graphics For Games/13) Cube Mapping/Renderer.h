@@ -34,6 +34,7 @@ protected:
 
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
 	void SetupPointLights();
+	void CameraPath();
 
 	SceneNode* rootNode;
 
@@ -49,6 +50,9 @@ protected:
 	Shader* sceneShader;
 	Shader* combineShader;
 	Shader* pointLightShader;
+	Shader* cylinderShader;
+	Shader* cylinderTwoShader;
+	Shader* cubeShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
@@ -65,13 +69,15 @@ protected:
 	const Vector3 START_POS = Vector3(19210.0f, 981.0f, 34512.0f);
 
 	OBJMesh* cylinder;
-	Shader* cylinderShader;
+	OBJMesh* cube;
 	OBJMesh* lightObj;
 
 	void DrawText(const std::string& text, const Vector3& position, const float size = 10.0f, const bool perspective = false);
 	Font* basicFont;
 
 	Window* w;
+
+	// fps counter
 	float fps;
 	float lastTime;
 	float currentTime;
@@ -80,13 +86,21 @@ protected:
 
 	float rotation;
 
-	GLuint bufferFBO;				// FBO for g-buffer pass
-	GLuint bufferColourTex;			// albedo
-	GLuint bufferNormalTex;			// normals
-	GLuint bufferDepthTex;			// depth
+	GLuint bufferFBO;
+	GLuint bufferColourTex;
+	GLuint bufferNormalTex;
+	GLuint bufferDepthTex;
 
-	GLuint pointLightFBO;			// FBO for lighting pass
-	GLuint lightEmissiveTex;		// store emissive lighting
-	GLuint lightSpecularTex;		// store specular lighting
+	GLuint pointLightFBO;
+	GLuint lightEmissiveTex;
+	GLuint lightSpecularTex;
+
+	// camera movement
+	bool autoMove;
+	float cameraTime;
+	const float MOVE_SPEED = 1.0;
+	const Vector3 MOVE_X = Vector3(MOVE_SPEED, 0, 0);
+	const Vector3 MOVE_Y = Vector3(0, MOVE_SPEED * 0.25, 0);
+	const Vector3 MOVE_Z = Vector3(0, 0, MOVE_SPEED);
 };
 

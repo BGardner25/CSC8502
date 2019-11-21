@@ -29,6 +29,6 @@ void main (void) {
     OUT.normal = normalize(normalMatrix * normalize(normal));
 
     OUT.worldPos = (modelMatrix * vec4(position,1)).xyz;
-    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x * clamp(hVal, 0.0, 1.0), position.y * 
+    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x, position.y * 
 																clamp(hVal, 0.0, 1.0), position.z * clamp(hVal, 0.0, 1.0)), 1.0);
 }

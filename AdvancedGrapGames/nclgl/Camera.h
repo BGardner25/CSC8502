@@ -17,29 +17,28 @@ _-_-_-_-_-_-_-""  ""
 #include "Matrix4.h"
 #include "Vector3.h"
 
-struct SplineSegment {
-	Vector3 a;
-	Vector3 b;
-	Vector3 c;
-	Vector3 d;
-};
-
 class Camera {
 public:
 	Camera(void){
 		yaw		= 0.0f;
 		pitch	= 0.0f;
+		direction = Vector3(0, 0, 0);
+		changePitch = 0.0f;
+		changeYaw = 0.0f;
 	}
 
 	Camera(float pitch, float yaw, Vector3 position){
 		this->pitch		= pitch;
 		this->yaw		= yaw;
 		this->position	= position;
+		direction = Vector3(0, 0, 0);
+		changePitch = 0.0f;
+		changeYaw = 0.0f;
 	}
 
 	~Camera(void){}
 
-	void UpdateCamera(float msec = 10.0f);
+	void UpdateCamera(float msec = 10.0f, bool autoMove = false);
 
 	//Builds a view matrix for the current camera variables, suitable for sending straight
 	//to a vertex shader (i.e it's already an 'inverse camera matrix').
@@ -60,11 +59,16 @@ public:
 	//Sets pitch, in degrees
 	void	SetPitch(float p) {pitch = p;}
 
-	Vector3 GetSegmentPosition(float msec);
+	void SetMovement(Vector3 dir) { direction = dir; }
+	void SetChangePitch(float pitch) { changePitch = pitch; }
+	void SetChangeYaw(float yaw) { changeYaw = yaw; }
 
 protected:
 	float	yaw;
 	float	pitch;
 	// default 0,0,0 in Vector3 constructor
 	Vector3 position;
+	Vector3 direction;
+	float changePitch;
+	float changeYaw;
 };

@@ -148,13 +148,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
+	cylinderTwoShader = new Shader(SHADERDIR"CylinderTwoVert.glsl", SHADERDIR"CylinderTwoFrag.glsl");
 	sceneShader = new Shader(SHADERDIR"bumpVertex.glsl", SHADERDIR"bufferFragment.glsl");
 	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
+	cubeShader = new Shader(SHADERDIR"cubeVert.glsl", SHADERDIR"cubeFrag.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
-			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !sceneShader->LinkProgram() 
-				|| !combineShader->LinkProgram() || !pointLightShader->LinkProgram())
+			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
+			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -174,11 +176,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	if (!cylinder->LoadOBJMesh(MESHDIR"cylinder.obj"))
 		return;
 
+	cube = new OBJMesh();
+	if (!cube->LoadOBJMesh(MESHDIR"cube.obj"))
+		return;
+
 	lightObj = new OBJMesh();
 	if (!lightObj->LoadOBJMesh(MESHDIR"ico.obj"))
 		return;
 
 	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	cube->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"ICE.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap()  || !heightMap->GetBumpMapThree()
 			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture())
@@ -197,12 +204,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	rootNode = new SceneNode();
 
-	/*SceneNode* water = new SceneNode();
-	water->SetShader(reflectShader);
-	water->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	water->SetBoundingRadius(80000.0f);
-	water->SetMesh(quad);*/
-
 	SceneNode* cylinderNode = new SceneNode();
 	cylinderNode->SetShader(cylinderShader);
 	cylinderNode->SetBoundingRadius(10000.0f);
@@ -210,6 +211,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	cylinderNode->SetModelScale(Vector3(1000.0f, 1500.0f, 1000.0f));
 	cylinderNode->SetMesh(cylinder);
 	rootNode->AddChild(cylinderNode);
+
+	SceneNode* cylinderTwo = new SceneNode();
+	cylinderTwo->SetShader(cylinderTwoShader);
+	cylinderTwo->SetBoundingRadius(10000.0f);
+	cylinderTwo->SetTransform(Matrix4::Translation(Vector3(18604.0f, 3500.0f, 26643.50f)));
+	cylinderTwo->SetModelScale(Vector3(800.0f, 1500.0f, 800.0f));
+	cylinderTwo->SetMesh(cylinder);
+	rootNode->AddChild(cylinderTwo);
+
+	SceneNode* cubeNode = new SceneNode();
+	cubeNode->SetShader(cubeShader);
 
 	heightVal = 0.0f;
 	waterRotate = 0.0f;
@@ -219,10 +231,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	currentTime = 0.0f;
 	timePassed = 0.0f;
 	frames = 0.0f;
+	autoMove = true;
+	cameraTime = 0.0f;
+	rotation = 0.0f;
 
 	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
 
-	SetupPointLights();
+	//SetupPointLights();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -257,16 +272,25 @@ Renderer::~Renderer(void) {
 }
 
 void Renderer::UpdateScene(float msec) {
-	camera->UpdateCamera(msec);
+	if (autoMove) {
+		CameraPath();
+		camera->UpdateCamera(msec, true);
+	}
+	else {
+		camera->UpdateCamera(msec);
+	}
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 	rootNode->Update(msec);
 	waterRotate += msec / 1000.0f;
 	rotation = msec * 0.01f;
-	heightVal += msec / 15000.0f;
+	heightVal += msec / 20000.0f;
+	cameraTime += msec;
 	totalTime += msec;
-	if (totalTime >= 1000.0f)
-		cout << camera->GetPosition(), totalTime = 0;
+	if (totalTime >= 1000.0f) {
+		cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
+		totalTime = 0;
+	}
 
 	lastTime = w->GetTimer()->GetMS();
 	frames++;
@@ -275,6 +299,16 @@ void Renderer::UpdateScene(float msec) {
 		fps = frames;
 		frames = 0.0f;
 		timePassed = 0.0f;
+	}
+	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_M)) {
+		if (autoMove == false) {
+			camera->SetPosition(START_POS);
+			camera->SetPitch(0.0f);
+			camera->SetYaw(0.0f);
+			cameraTime = 8000.0f;
+			camera->SetMovement(Vector3(0, 0, 0));
+		}
+		autoMove = !autoMove;
 	}
 	currentTime = w->GetTimer()->GetMS();
 }
@@ -299,6 +333,205 @@ void Renderer::RenderScene() {
 	SwapBuffers();
 	ClearNodeLists();
 }
+
+void Renderer::CameraPath() {
+	float startTime = 8000.0f;
+	if (cameraTime > startTime + 37000) {
+		camera->SetMovement(Vector3(0, 0, 0));
+		camera->SetChangeYaw(0.0f);
+	}
+	else if (cameraTime > startTime + 27000) {
+		camera->SetMovement(-MOVE_X + MOVE_Y);
+		camera->SetChangeYaw(-0.027f);
+	}
+	else if (cameraTime > startTime + 21000)
+		camera->SetMovement(-MOVE_Z);
+	else if (cameraTime > startTime + 18000) {
+		camera->SetMovement(-MOVE_X + -MOVE_Y + -MOVE_Z);
+		camera->SetChangePitch(0.0f);
+	}
+	else if (cameraTime > startTime + 15000) {
+		camera->SetMovement(-MOVE_Z);
+		camera->SetChangeYaw(0.015f);
+	}
+	else if (cameraTime > startTime + 9000) {
+		camera->SetMovement(MOVE_X + MOVE_Y + -MOVE_Z);
+		camera->SetChangeYaw(0.030f);
+		camera->SetChangePitch(0.005f);
+	}
+	else if (cameraTime > startTime + 5000) {
+		camera->SetMovement(-MOVE_X + -MOVE_Z);
+		camera->SetChangeYaw(0.020f);
+		camera->SetChangePitch(-0.0080f);
+		
+	}
+	else if (cameraTime > startTime) {
+		camera->SetMovement(-MOVE_Z);
+	}
+}
+
+void Renderer::BuildNodeLists(SceneNode* from) {
+	if (frameFrustum.InsideFrustum(*from)) {
+		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
+		from->SetCameraDistance(Vector3::Dot(dir, dir));
+
+		if (from->GetColour().w < 1.0f)
+			transparentNodeList.push_back(from);
+		else
+			nodeList.push_back(from);
+	}
+
+	for (vector<SceneNode*>::const_iterator i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i)
+		BuildNodeLists((*i));
+}
+
+void Renderer::SortNodeLists() {
+	std::sort(transparentNodeList.begin(), transparentNodeList.end(), SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
+}
+
+void Renderer::DrawNodes() {
+	for (vector<SceneNode*>::const_iterator i = nodeList.begin(); i != nodeList.end(); ++i)
+		DrawNode((*i));
+	for (vector<SceneNode*>::const_reverse_iterator i = transparentNodeList.rbegin(); i != transparentNodeList.rend(); ++i)
+		DrawNode((*i));
+}
+
+void Renderer::DrawNode(SceneNode* n) {
+	if (n->GetMesh()) {
+		SetCurrentShader(n->GetShader());
+		SetShaderLight(*light);
+		
+		glUseProgram(currentShader->GetProgram());
+		
+		textureMatrix = n->GetTextureMatrix();
+		UpdateShaderMatrices();
+		// setup all needed uniforms
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 1);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 2);
+		glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
+		glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "rotation"), rotation);
+		glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false,
+													(float*)&(n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale())));
+		
+		n->Draw(*this);
+	}
+}
+
+void Renderer::ClearNodeLists() {
+	transparentNodeList.clear();
+	nodeList.clear();
+}
+
+void Renderer::DrawUI() {
+	SetCurrentShader(fontShader);
+
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+
+	DrawText("FPS: " + to_string(fps), Vector3(0.0f, 0.0f, 0.0f), 16.0f);
+	DrawText("M: TOGGLE FREE LOOK/AUTOCAM ", Vector3(0.0f, 18.0f, 0.0f), 14.0f);
+	
+
+	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
+	glUseProgram(0);
+}
+
+void Renderer::DrawSkybox() {
+	glDepthMask(GL_FALSE);
+	SetCurrentShader(skyboxShader);
+	glCullFace(GL_FRONT);
+
+	UpdateShaderMatrices();
+	quad->Draw();
+	
+	glUseProgram(0);
+	glDepthMask(GL_TRUE);
+	glCullFace(GL_BACK);
+}
+
+void Renderer::DrawHeightMap() {
+	SetCurrentShader(lightShader);
+	SetShaderLight(*light);
+
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texGrass"), 2);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureTwo"), 3);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texSnow"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureThree"), 5);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
+
+	modelMatrix.ToIdentity();
+	textureMatrix.ToIdentity();
+
+	UpdateShaderMatrices();
+
+	heightMap->Draw();
+
+	glUseProgram(0);
+}
+
+void Renderer::DrawWater() {
+	SetCurrentShader(reflectShader);
+	SetShaderLight(*light);
+
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+	float heightX = (RAW_WIDTH * HEIGHTMAP_X * 0.50f);
+	float heightY = (RAW_WIDTH - 1) * HEIGHTMAP_Y * 0.22;
+	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z * 0.50f);
+
+	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
+		Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
+		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
+
+	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
+		Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
+
+	UpdateShaderMatrices();
+
+	quad->Draw();
+
+	glUseProgram(0);
+}
+
+void Renderer::DrawText(const std::string& text, const Vector3& position, const float size, const bool perspective) {
+	//Create a new temporary TextMesh, using our line of text and our font
+	TextMesh* mesh = new TextMesh(text, *basicFont);
+
+	//This just does simple matrix setup to render in either perspective or
+	//orthographic mode, there's nothing here that's particularly tricky.
+	if (perspective) {
+		modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(size, size, 1));
+		viewMatrix = camera->BuildViewMatrix();
+		projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	}
+	else {
+		//In ortho mode, we subtract the y from the height, so that a height of 0
+		//is at the top left of the screen, which is more intuitive
+		//(for me anyway...)
+		modelMatrix = Matrix4::Translation(Vector3(position.x, height - position.y, position.z)) * Matrix4::Scale(Vector3(size, size, 1));
+		viewMatrix.ToIdentity();
+		projMatrix = Matrix4::Orthographic(-1.0f, 1.0f, (float)width, 0.0f, (float)height, 0.0f);
+	}
+	//Either way, we update the matrices, and draw the mesh
+	UpdateShaderMatrices();
+	mesh->Draw();
+
+	delete mesh; //Once it's drawn, we don't need it anymore!
+}
+
+
+
 
 void Renderer::SetupPointLights() {
 	glGenFramebuffers(1, &bufferFBO);
@@ -446,181 +679,4 @@ void Renderer::CombineBuffers() {
 	quad->Draw();
 
 	glUseProgram(0);
-}
-
-void Renderer::BuildNodeLists(SceneNode* from) {
-	if (frameFrustum.InsideFrustum(*from)) {
-		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
-		from->SetCameraDistance(Vector3::Dot(dir, dir));
-
-		if (from->GetColour().w < 1.0f)
-			transparentNodeList.push_back(from);
-		else
-			nodeList.push_back(from);
-	}
-
-	for (vector<SceneNode*>::const_iterator i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i)
-		BuildNodeLists((*i));
-}
-
-void Renderer::SortNodeLists() {
-	std::sort(transparentNodeList.begin(), transparentNodeList.end(), SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
-}
-
-void Renderer::DrawNodes() {
-	for (vector<SceneNode*>::const_iterator i = nodeList.begin(); i != nodeList.end(); ++i)
-		DrawNode((*i));
-	for (vector<SceneNode*>::const_reverse_iterator i = transparentNodeList.rbegin(); i != transparentNodeList.rend(); ++i)
-		DrawNode((*i));
-}
-
-void Renderer::DrawNode(SceneNode* n) {
-	if (n->GetMesh()) {
-		SetCurrentShader(n->GetShader());
-		// different light for shadow mapping i.e. point light?
-		SetShaderLight(*light);
-		
-		glUseProgram(currentShader->GetProgram());
-		//UpdateShaderMatrices();
-		textureMatrix = n->GetTextureMatrix();
-		UpdateShaderMatrices();
-		// setup all needed uniforms
-		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 1);
-		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 2);
-		glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
-		glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false,
-													(float*)&(n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale())));
-		
-		n->Draw(*this);
-	}
-}
-
-void Renderer::ClearNodeLists() {
-	transparentNodeList.clear();
-	nodeList.clear();
-}
-
-void Renderer::DrawUI() {
-	SetCurrentShader(fontShader);
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-
-	DrawText("FPS: " + to_string(fps), Vector3(0.0f, 0.0f, 0.0f), 16.0f);
-
-	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
-	glUseProgram(0);
-}
-
-void Renderer::DrawSkybox() {
-	glDepthMask(GL_FALSE);
-	SetCurrentShader(skyboxShader);
-	glCullFace(GL_FRONT);
-
-	UpdateShaderMatrices();
-	quad->Draw();
-	
-	glUseProgram(0);
-	glDepthMask(GL_TRUE);
-	glCullFace(GL_BACK);
-}
-
-void Renderer::DrawHeightMap() {
-	SetCurrentShader(lightShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texGrass"), 2);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureTwo"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texSnow"), 4);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureThree"), 5);
-	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
-
-	modelMatrix.ToIdentity();
-	textureMatrix.ToIdentity();
-
-	UpdateShaderMatrices();
-
-	heightMap->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawWater() {
-	SetCurrentShader(reflectShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-
-	float heightX = (RAW_WIDTH * HEIGHTMAP_X * 0.50f);
-	float heightY = (RAW_WIDTH - 1) * HEIGHTMAP_Y * 0.22;
-	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z * 0.50f);
-
-	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
-		Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
-		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
-
-	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
-
-	UpdateShaderMatrices();
-
-	quad->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawCylinder() {
-	SetCurrentShader(cylinderShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
-
-	modelMatrix = Matrix4::Translation(Vector3(18604.0f, 500.0f, 26643.50f)) *
-					Matrix4::Scale(Vector3(1000.0f, 1500.0f, 1000.0f));
-	textureMatrix.ToIdentity();
-
-	UpdateShaderMatrices();
-
-	cylinder->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawText(const std::string& text, const Vector3& position, const float size, const bool perspective) {
-	//Create a new temporary TextMesh, using our line of text and our font
-	TextMesh* mesh = new TextMesh(text, *basicFont);
-
-	//This just does simple matrix setup to render in either perspective or
-	//orthographic mode, there's nothing here that's particularly tricky.
-	if (perspective) {
-		modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(size, size, 1));
-		viewMatrix = camera->BuildViewMatrix();
-		projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
-	}
-	else {
-		//In ortho mode, we subtract the y from the height, so that a height of 0
-		//is at the top left of the screen, which is more intuitive
-		//(for me anyway...)
-		modelMatrix = Matrix4::Translation(Vector3(position.x, height - position.y, position.z)) * Matrix4::Scale(Vector3(size, size, 1));
-		viewMatrix.ToIdentity();
-		projMatrix = Matrix4::Orthographic(-1.0f, 1.0f, (float)width, 0.0f, (float)height, 0.0f);
-	}
-	//Either way, we update the matrices, and draw the mesh
-	UpdateShaderMatrices();
-	mesh->Draw();
-
-	delete mesh; //Once it's drawn, we don't need it anymore!
 }
