@@ -52,9 +52,11 @@ protected:
 	Shader* cylinderShader;
 	Shader* cylinderTwoShader;
 	Shader* cubeShader;
+	Shader* waterShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
+	Mesh* skyQuad;
 
 	Light* light;
 	Light* pointLight;

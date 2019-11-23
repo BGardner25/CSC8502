@@ -1,6 +1,6 @@
 #version 400 core
 
-layout(vertices = 3) out;
+layout(vertices = 4) out;
 
 in Vertex {
 	vec4 colour;
@@ -22,6 +22,7 @@ void main(void) {
 	gl_TessLevelOuter[0] = 64;
 	gl_TessLevelOuter[1] = 64;
 	gl_TessLevelOuter[2] = 64;
+	gl_TessLevelOuter[3] = 64;
 
 	OUT[gl_InvocationID].colour = IN[gl_InvocationID].colour;
 	OUT[gl_InvocationID].texCoord = IN[gl_InvocationID].texCoord;

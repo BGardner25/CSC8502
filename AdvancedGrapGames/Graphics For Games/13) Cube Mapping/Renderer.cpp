@@ -5,6 +5,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	basicFont = new Font(SOIL_load_OGL_texture(TEXTUREDIR"tahoma.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 16, 16);
 	heightMap = new HeightMapPNG(TEXTUREDIR"heightmap512.jpg");
 	quad = Mesh::GenerateQuad();
+	skyQuad = Mesh::GenerateQuad();
 
 	camera->SetPosition(POINT_2);
 
@@ -13,7 +14,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 20.0f);
 
 	fontShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
-	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
+	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectLightFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
 	cylinderShader = new Shader(SHADERDIR"CylinderVert.glsl", SHADERDIR"CylinderFrag.glsl");
@@ -21,13 +22,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sceneShader = new Shader(SHADERDIR"bumpVertex.glsl", SHADERDIR"bufferFragment.glsl");
 	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
-	//cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
-	cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl", "", SHADERDIR"CubeTCS.glsl", SHADERDIR"CubeTES.glsl");
+	cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	//cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl", "", SHADERDIR"CubeTCS.glsl", SHADERDIR"CubeTES.glsl");
+	waterShader = new Shader(SHADERDIR"WaterVert.glsl", SHADERDIR"reflectLightFragment.glsl", "", SHADERDIR"WaterTCS.glsl", SHADERDIR"WaterTES.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
 			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
 			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram()
-			|| !cubeShader->LinkProgram())
+			|| !cubeShader->LinkProgram() || !waterShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -90,8 +92,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	cylinderTwo->SetMesh(cylinder);
 	rootNode->AddChild(cylinderTwo);
 
-	cube->SetPrimitiveType(GL_PATCHES);
-	glPatchParameteri(GL_PATCH_VERTICES, 3);
+	//cube->SetPrimitiveType(GL_PATCHES);
+	//glPatchParameteri(GL_PATCH_VERTICES, 3);
 	SceneNode* cubeNode = new SceneNode();
 	cubeNode->SetShader(cubeShader);
 	cubeNode->SetBoundingRadius(10000.0f);
@@ -341,7 +343,7 @@ void Renderer::DrawSkybox() {
 	glCullFace(GL_FRONT);
 
 	UpdateShaderMatrices();
-	quad->Draw();
+	skyQuad->Draw();
 	
 	glUseProgram(0);
 	glDepthMask(GL_TRUE);
@@ -372,14 +374,18 @@ void Renderer::DrawHeightMap() {
 }
 
 void Renderer::DrawWater() {
-	SetCurrentShader(reflectShader);
+	quad->SetPrimitiveType(GL_PATCHES);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	SetCurrentShader(waterShader);
 	SetShaderLight(*light);
 
 	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 6);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "waterRotate"), waterRotate);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "time"), cameraStartTime);
 
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	float heightX = (RAW_WIDTH * HEIGHTMAP_X * 0.50f);
