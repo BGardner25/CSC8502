@@ -29,6 +29,7 @@ public:
 	GLuint GetTextureThree() { return textureThree; }
 	void SetBumpMapThree(GLuint tex) { bumpTextureThree = tex; }
 	GLuint GetBumpMapThree() { return bumpTextureThree; }
+	void SetPrimitiveType(GLuint pType) { type = pType; }
 
 protected:
 	void GenerateNormals();

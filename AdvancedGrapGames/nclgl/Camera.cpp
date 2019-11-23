@@ -63,6 +63,16 @@ void Camera::UpdateCamera(float msec, bool autoMove)	{
 	}
 }
 
+Vector3 Camera::GetCatRomPos(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3) {
+	Vector3 a = p1 * 2.0f;
+	Vector3 b = p2 - p0;
+	Vector3 c = p0 * 2.0f - p1 * 5.0f + p2 * 4.0f - p3;
+	Vector3 d = -p0 + p1 * 3.0f - p2 * 3.0f + p3;
+
+	Vector3 pos = (a + (b * t) + (c * t * t) + (d * t * t * t)) * 0.5;
+	return pos;
+}
+
 /*
 Generates a view matrix for the camera's viewpoint. This matrix can be sent
 straight to the shader...it's already an 'inverse camera' matrix.

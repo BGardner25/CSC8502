@@ -27,14 +27,13 @@ protected:
 	void DrawSkybox();
 	void DrawHeightMap();
 	void DrawWater();
-	void DrawCylinder();
 	void DrawPointLight();
 	void FillBuffers();
 	void CombineBuffers();
 
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
 	void SetupPointLights();
-	void CameraPath();
+	void CameraPath(float msec);
 
 	SceneNode* rootNode;
 
@@ -67,6 +66,38 @@ protected:
 	float heightVal;		// to raise terrain
 	float totalTime = 0.0f;
 	const Vector3 START_POS = Vector3(19210.0f, 981.0f, 34512.0f);
+	const Vector3 POINT_2 = Vector3(19874.3, 1371.43, 33257.3);
+	const Vector3 POINT_3 = Vector3(19331.6, 1371.43, 31398.8);
+	const Vector3 POINT_4 = Vector3(18294.3, 1371.43, 29495);
+
+	const Vector3 POINT_5 = Vector3(16021.1, 1371.43, 28640);
+	const Vector3 POINT_6 = Vector3(15890.9, 1371.43, 26756.1);
+	const Vector3 POINT_7 = Vector3(16676.6, 1371.43, 25251);
+
+	const Vector3 POINT_8 = Vector3(18280.7, 2384.82, 23415.5);
+	const Vector3 POINT_9 = Vector3(20954.9, 3244.75, 22409.4);
+	const Vector3 POINT_10 = Vector3(22238.6, 3244.75, 20344.2);
+
+	const Vector3 POINT_11 = Vector3(21244.9, 3484.04, 18116.2);
+	const Vector3 POINT_12 = Vector3(18997.3, 2176.84, 14779.2);
+	const Vector3 POINT_13 = Vector3(17947.3, 1734.25, 12823.3);
+
+	const Vector3 POINT_14 = Vector3(16641.5, 1734.25, 11657.2);
+	const Vector3 POINT_15 = Vector3(13353.6, 2716.42, 11630.5);
+	const Vector3 POINT_16 = Vector3(7329.55, 4499.71, 10183.7);
+
+	vector<Vector3> cameraPoints = { START_POS, POINT_2, POINT_3, POINT_4, 
+												POINT_5, POINT_6, POINT_7,
+												POINT_8, POINT_9, POINT_10,
+												POINT_11, POINT_12, POINT_13,
+												POINT_14, POINT_15, POINT_16 };
+
+	int cameraPointIndex;
+	bool autoMove;
+	float cameraStartTime;
+
+	const Vector3 SECOND_POS = Vector3(17912.0f, 2300.0f, 10688.0f);
+	const Vector3 THIRD_POS = Vector3(6519.93f, 3589.71f, 33067.8f);
 
 	OBJMesh* cylinder;
 	OBJMesh* cube;
@@ -94,13 +125,5 @@ protected:
 	GLuint pointLightFBO;
 	GLuint lightEmissiveTex;
 	GLuint lightSpecularTex;
-
-	// camera movement
-	bool autoMove;
-	float cameraTime;
-	const float MOVE_SPEED = 1.0;
-	const Vector3 MOVE_X = Vector3(MOVE_SPEED, 0, 0);
-	const Vector3 MOVE_Y = Vector3(0, MOVE_SPEED * 0.25, 0);
-	const Vector3 MOVE_Z = Vector3(0, 0, MOVE_SPEED);
 };
 

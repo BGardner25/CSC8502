@@ -59,7 +59,7 @@ void Mesh::Draw() {
 	else
 		glDrawArrays(type, 0, numVertices);
 	glBindVertexArray(0);
-	//glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 Mesh* Mesh::GenerateTriangle() {

@@ -63,6 +63,8 @@ public:
 	void SetChangePitch(float pitch) { changePitch = pitch; }
 	void SetChangeYaw(float yaw) { changeYaw = yaw; }
 
+	Vector3 GetCatRomPos(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3);
+
 protected:
 	float	yaw;
 	float	pitch;

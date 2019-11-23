@@ -1,134 +1,3 @@
-/*#include "Renderer.h"
-
-Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera();
-	heightMap = new HeightMap(TEXTUREDIR"terrain.raw");
-	quad = Mesh::GenerateQuad();
-
-	camera->SetPosition(Vector3(RAW_WIDTH * HEIGHTMAP_X / 2.0f, 500.0f, RAW_WIDTH * HEIGHTMAP_X));
-
-	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 500.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
-					Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) / 2.0);
-
-	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectFragment.glsl");
-	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
-	lightShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
-
-	if (!reflectShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram())
-		return;
-
-	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg",	TEXTUREDIR"rusted_east.jpg",
-									TEXTUREDIR"rusted_up.jpg",		TEXTUREDIR"rusted_down.jpg",
-									TEXTUREDIR"rusted_south.jpg",	TEXTUREDIR"rusted_north.jpg", 
-									SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-
-	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap())
-		return;
-
-	SetTextureRepeating(quad->GetTexture(), true);
-	SetTextureRepeating(heightMap->GetTexture(), true);
-	SetTextureRepeating(heightMap->GetBumpMap(), true);
-
-	waterRotate = 0.0f;
-
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	init = true;
-}
-
-Renderer::~Renderer(void) {
-	delete camera;
-	delete heightMap;
-	delete quad;
-	delete reflectShader;
-	delete skyboxShader;
-	delete lightShader;
-	delete light;
-	currentShader = 0;
-}
-
-void Renderer::UpdateScene(float msec) {
-	camera->UpdateCamera(msec);
-	viewMatrix = camera->BuildViewMatrix();
-	waterRotate += msec / 1000.0f;
-}
-
-void Renderer::RenderScene() {
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-	DrawSkybox();
-	DrawHeightMap();
-	DrawWater();
-
-	SwapBuffers();
-}
-
-void Renderer::DrawSkybox() {
-	glDepthMask(GL_FALSE);
-	SetCurrentShader(skyboxShader);
-
-	UpdateShaderMatrices();
-	quad->Draw();
-
-	glUseProgram(0);
-	glDepthMask(GL_TRUE);
-}
-
-void Renderer::DrawHeightMap() {
-	SetCurrentShader(lightShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
-
-	modelMatrix.ToIdentity();
-	textureMatrix.ToIdentity();
-
-	UpdateShaderMatrices();
-
-	heightMap->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawWater() {
-	SetCurrentShader(reflectShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-
-	float heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
-	float heightY = 256 * HEIGHTMAP_Y / 3.0f;
-	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
-
-	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
-					Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
-					Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
-
-	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-					Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
-
-	UpdateShaderMatrices();
-
-	quad->Draw();
-
-	glUseProgram(0);
-}*/
-
 #include "Renderer.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
@@ -137,7 +6,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMapPNG(TEXTUREDIR"heightmap512.jpg");
 	quad = Mesh::GenerateQuad();
 
-	camera->SetPosition(START_POS);
+	camera->SetPosition(POINT_2);
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
@@ -152,11 +21,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sceneShader = new Shader(SHADERDIR"bumpVertex.glsl", SHADERDIR"bufferFragment.glsl");
 	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
-	cubeShader = new Shader(SHADERDIR"cubeVert.glsl", SHADERDIR"cubeFrag.glsl");
+	//cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl", "", SHADERDIR"CubeTCS.glsl", SHADERDIR"CubeTES.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
 			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
-			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram())
+			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram()
+			|| !cubeShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -177,7 +48,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 
 	cube = new OBJMesh();
-	if (!cube->LoadOBJMesh(MESHDIR"cube.obj"))
+	if (!cube->LoadOBJMesh(MESHDIR"centeredcube.obj"))
 		return;
 
 	lightObj = new OBJMesh();
@@ -185,13 +56,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 
 	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	cube->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"ICE.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	cube->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap()  || !heightMap->GetBumpMapThree()
-			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture())
+			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture() || !cube->GetTexture())
 		return;
-
-	
 
 	SetTextureRepeating(quad->GetTexture(), true);
 	SetTextureRepeating(heightMap->GetTexture(), true);
@@ -201,6 +70,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(heightMap->GetTextureThree(), true);
 	SetTextureRepeating(heightMap->GetBumpMapThree(), true);
 	SetTextureRepeating(cylinder->GetTexture(), true);
+	SetTextureRepeating(cube->GetTexture(), true);
 
 	rootNode = new SceneNode();
 
@@ -220,8 +90,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	cylinderTwo->SetMesh(cylinder);
 	rootNode->AddChild(cylinderTwo);
 
+	cube->SetPrimitiveType(GL_PATCHES);
+	glPatchParameteri(GL_PATCH_VERTICES, 3);
 	SceneNode* cubeNode = new SceneNode();
 	cubeNode->SetShader(cubeShader);
+	cubeNode->SetBoundingRadius(10000.0f);
+	cubeNode->SetTransform(Matrix4::Translation(Vector3(29000.0f, 3500.0f, 26000.0f)));
+	cubeNode->SetModelScale(Vector3(1000.0f, 1000.0f, 1000.0f));
+	cubeNode->SetMesh(cube);
+	rootNode->AddChild(cubeNode);
 
 	heightVal = 0.0f;
 	waterRotate = 0.0f;
@@ -232,10 +109,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	timePassed = 0.0f;
 	frames = 0.0f;
 	autoMove = true;
-	cameraTime = 0.0f;
+	cameraStartTime = 0.0f;
 	rotation = 0.0f;
+	cameraPointIndex = 0;
 
-	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
+	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 60.0f);
 
 	//SetupPointLights();
 
@@ -255,6 +133,7 @@ Renderer::~Renderer(void) {
 	delete heightMap;
 	delete quad;
 	delete cylinder;
+	delete cube;
 	delete lightObj;
 
 	delete fontShader;
@@ -265,6 +144,7 @@ Renderer::~Renderer(void) {
 	delete sceneShader;
 	delete combineShader;
 	delete pointLightShader;
+	delete cubeShader;
 
 	delete light;
 	delete pointLight;
@@ -273,7 +153,7 @@ Renderer::~Renderer(void) {
 
 void Renderer::UpdateScene(float msec) {
 	if (autoMove) {
-		CameraPath();
+		CameraPath(msec);
 		camera->UpdateCamera(msec, true);
 	}
 	else {
@@ -285,12 +165,8 @@ void Renderer::UpdateScene(float msec) {
 	waterRotate += msec / 1000.0f;
 	rotation = msec * 0.01f;
 	heightVal += msec / 20000.0f;
-	cameraTime += msec;
-	totalTime += msec;
-	if (totalTime >= 1000.0f) {
-		cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
-		totalTime = 0;
-	}
+	cameraStartTime += msec;
+	//cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
 
 	lastTime = w->GetTimer()->GetMS();
 	frames++;
@@ -300,17 +176,48 @@ void Renderer::UpdateScene(float msec) {
 		frames = 0.0f;
 		timePassed = 0.0f;
 	}
+	currentTime = w->GetTimer()->GetMS();
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_M)) {
 		if (autoMove == false) {
-			camera->SetPosition(START_POS);
+			camera->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f);
+			cameraPointIndex = 0;
+			totalTime = 0;
 			camera->SetPitch(0.0f);
 			camera->SetYaw(0.0f);
-			cameraTime = 8000.0f;
-			camera->SetMovement(Vector3(0, 0, 0));
 		}
 		autoMove = !autoMove;
 	}
-	currentTime = w->GetTimer()->GetMS();
+	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_1)) {
+		autoMove = false;
+		if (autoMove == false) {
+			camera->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f);
+			camera->SetPosition(START_POS);
+			camera->SetYaw(0.0f);
+			camera->SetPitch(5.0f);
+		}
+	}
+	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_2)) {
+		autoMove = false;
+		if (autoMove == false) {
+			camera->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f);
+			camera->SetPosition(SECOND_POS);
+			camera->SetYaw(-10.0f);
+			camera->SetPitch(-15.0f);
+		}
+	}
+	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_3)) {
+		autoMove = false;
+		if (autoMove == false) {
+			camera->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f);
+			camera->SetPosition(THIRD_POS);
+			camera->SetYaw(-15.0f);
+			camera->SetPitch(-10.0f);
+		}
+	}
 }
 
 void Renderer::RenderScene() {
@@ -334,39 +241,28 @@ void Renderer::RenderScene() {
 	ClearNodeLists();
 }
 
-void Renderer::CameraPath() {
-	float startTime = 8000.0f;
-	if (cameraTime > startTime + 37000) {
-		camera->SetMovement(Vector3(0, 0, 0));
-		camera->SetChangeYaw(0.0f);
-	}
-	else if (cameraTime > startTime + 27000) {
-		camera->SetMovement(-MOVE_X + MOVE_Y);
-		camera->SetChangeYaw(-0.027f);
-	}
-	else if (cameraTime > startTime + 21000)
-		camera->SetMovement(-MOVE_Z);
-	else if (cameraTime > startTime + 18000) {
-		camera->SetMovement(-MOVE_X + -MOVE_Y + -MOVE_Z);
-		camera->SetChangePitch(0.0f);
-	}
-	else if (cameraTime > startTime + 15000) {
-		camera->SetMovement(-MOVE_Z);
-		camera->SetChangeYaw(0.015f);
-	}
-	else if (cameraTime > startTime + 9000) {
-		camera->SetMovement(MOVE_X + MOVE_Y + -MOVE_Z);
-		camera->SetChangeYaw(0.030f);
-		camera->SetChangePitch(0.005f);
-	}
-	else if (cameraTime > startTime + 5000) {
-		camera->SetMovement(-MOVE_X + -MOVE_Z);
-		camera->SetChangeYaw(0.020f);
-		camera->SetChangePitch(-0.0080f);
-		
-	}
-	else if (cameraTime > startTime) {
-		camera->SetMovement(-MOVE_Z);
+void Renderer::CameraPath(float msec) {
+	if (cameraStartTime > 15000 && cameraPointIndex + 3 < cameraPoints.size()) {
+		totalTime += msec / 2000.0f;
+		Vector3 pos = camera->GetCatRomPos(totalTime, cameraPoints[cameraPointIndex], cameraPoints[cameraPointIndex + 1], 
+														cameraPoints[cameraPointIndex + 2], cameraPoints[cameraPointIndex + 3]);
+		if (cameraPointIndex < 2)
+			camera->SetChangePitch(-0.0060f);
+		else if (cameraPointIndex < 4)
+			camera->SetChangePitch(0.0060f);
+		else
+			camera->SetChangePitch(0.0f);
+		if (cameraPointIndex < 9)
+			camera->SetChangeYaw(0.012f);
+		else if (cameraPointIndex > 9)
+			camera->SetChangeYaw(0.075f);
+		if (cameraPointIndex >= 12)
+			camera->SetChangeYaw(0.0f);
+		camera->SetPosition(pos);
+		if (totalTime > 1.0) {
+			cameraPointIndex++;
+			totalTime = 0.0;
+		}
 	}
 }
 
