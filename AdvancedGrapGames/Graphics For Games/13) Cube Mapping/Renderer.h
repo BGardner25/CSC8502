@@ -7,6 +7,8 @@
 #include "../nclgl/TextMesh.h"
 #include "HeightMapPNG.h"
 #include <algorithm>
+#include "Cube.h"
+#include "Dragon.h"
 
 class Renderer : public OGLRenderer {
 public:
@@ -51,7 +53,6 @@ protected:
 	Shader* pointLightShader;
 	Shader* cylinderShader;
 	Shader* cylinderTwoShader;
-	Shader* cubeShader;
 	Shader* waterShader;
 
 	HeightMapPNG* heightMap;
@@ -88,22 +89,33 @@ protected:
 	const Vector3 POINT_15 = Vector3(13353.6, 2716.42, 11630.5);
 	const Vector3 POINT_16 = Vector3(7329.55, 4499.71, 10183.7);
 
+	const Vector3 POINT_17 = Vector3(11622.8, 3436.15, 13480.2);
+	const Vector3 POINT_18 = Vector3(8977.93, 4167, 16397.9);
+	const Vector3 POINT_19 = Vector3(7483.54, 4167, 19439.7);
+
+	const Vector3 POINT_20 = Vector3(9574.51, 4162.43, 21325.4);
+	const Vector3 POINT_21 = Vector3(11715, 4625.32, 22549.8);
+	const Vector3 POINT_22 = Vector3(8906.33, 4625.32, 23747.8);
+
 	vector<Vector3> cameraPoints = { START_POS, POINT_2, POINT_3, POINT_4, 
 												POINT_5, POINT_6, POINT_7,
 												POINT_8, POINT_9, POINT_10,
 												POINT_11, POINT_12, POINT_13,
-												POINT_14, POINT_15, POINT_16 };
+												POINT_14, POINT_15, POINT_16,
+												POINT_17, POINT_18, POINT_19, 
+												POINT_20, POINT_21, POINT_22 };
 
 	int cameraPointIndex;
 	bool autoMove;
-	float cameraStartTime;
+	float time;
 
-	const Vector3 SECOND_POS = Vector3(17912.0f, 2300.0f, 10688.0f);
+	const Vector3 SECOND_POS = Vector3(28780.20f, 667.29f, 17322.0f);
 	const Vector3 THIRD_POS = Vector3(6519.93f, 3589.71f, 33067.8f);
 
 	OBJMesh* cylinder;
 	OBJMesh* cube;
 	OBJMesh* lightObj;
+	OBJMesh* dragon;
 
 	void DrawText(const std::string& text, const Vector3& position, const float size = 10.0f, const bool perspective = false);
 	Font* basicFont;

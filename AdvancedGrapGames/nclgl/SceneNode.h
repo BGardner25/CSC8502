@@ -32,6 +32,12 @@ public:
 	Shader* GetShader() const { return shader; }
 	void SetShader(Shader* s) { shader = s; }
 
+	GLuint GetPrimitiveType() const { return type; }
+	void SetPrimitiveType(GLuint t) { type = t; }
+
+	GLuint GetNumVertices() const { return numVertices; }
+	void SetNumVertices(GLuint numVert) { numVertices = numVert; }
+
 	void AddChild(SceneNode* s);
 
 	virtual void Update(float msec);
@@ -65,5 +71,8 @@ protected:
 
 	Matrix4 textureMatrix;
 	Matrix4 rotation;
+
+	GLuint type;
+	GLuint numVertices;
 };
 

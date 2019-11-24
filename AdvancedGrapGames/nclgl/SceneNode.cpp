@@ -5,6 +5,8 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	this->colour = colour;
 	texture = 0;
 	shader = 0;
+	type = GL_TRIANGLES;
+	numVertices = 0;
 	parent = NULL;
 	modelScale = Vector3(1, 1, 1);
 	boundingRadius = 1.0f;

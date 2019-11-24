@@ -17,11 +17,11 @@ out Vertex {
 } OUT[];
 
 void main(void) {
-	gl_TessLevelInner[0] = 64;
-	gl_TessLevelInner[1] = 64;
-	gl_TessLevelOuter[0] = 64;
-	gl_TessLevelOuter[1] = 64;
-	gl_TessLevelOuter[2] = 64;
+	gl_TessLevelInner[0] = 16;
+	gl_TessLevelInner[1] = 16;
+	gl_TessLevelOuter[0] = 16;
+	gl_TessLevelOuter[1] = 16;
+	gl_TessLevelOuter[2] = 16;
 
 	OUT[gl_InvocationID].colour = IN[gl_InvocationID].colour;
 	OUT[gl_InvocationID].texCoord = IN[gl_InvocationID].texCoord;

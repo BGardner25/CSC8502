@@ -6,7 +6,6 @@ uniform vec3 cameraPos;
 uniform vec4 lightColour;
 uniform vec3 lightPos;
 uniform float lightRadius;
-uniform float heightVal;
 
 in Vertex {
     vec3 colour;
@@ -17,7 +16,7 @@ in Vertex {
 
 out vec4 fragColour;
 void main (void) {
-    vec4 diffuse = texture(diffuseTex, IN.texCoord) * vec4(1, heightVal * 0.4, 0, 1.0);
+    vec4 diffuse = texture(diffuseTex, IN.texCoord);
 
     vec3 incident = normalize(lightPos - IN.worldPos);
     float lambert = max(0.0, dot(incident, IN.normal));

@@ -17,7 +17,7 @@ in Vertex {
 
 out vec4 fragColour;
 
-// water reflection for cube map and per pixel lighting
+// water reflection for cube map and per pixel lighting. also changed alpha so water is slightly transparent
 void main(void) {
     vec4 diffuse = texture(diffuseTex, IN.texCoord);
     vec3 reflectIncident = normalize(IN.worldPos - cameraPos);
@@ -38,6 +38,6 @@ void main(void) {
 	vec3 colour = (diffuse.rgb * lightColour.rgb);
 	colour += (lightColour.rgb * sFactor) * 0.33;
     
-	fragColour = vec4((colour * atten * lambert), diffuse.a);
+	fragColour = vec4((colour * atten * lambert), diffuse.a * 0.7);
 	fragColour.rgb += ((diffuse.rgb + reflection.rgb) * lightColour.rgb) * 0.25;
 }

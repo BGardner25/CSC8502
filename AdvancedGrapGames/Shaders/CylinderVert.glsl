@@ -19,7 +19,7 @@ out Vertex {
 } OUT;
 
 void main (void) {
-	float hVal = heightVal * 0.8;
+	float hVal = heightVal * 0.4;
 
 	OUT.colour = colour;
     OUT.texCoord = (textureMatrix * vec4(texCoord, 0.0, 1.0)).xy;

@@ -55,10 +55,12 @@ void main(void) {
 						gl_in[2].gl_Position.xyz,
 						gl_in[3].gl_Position.xyz);
 
-	vec4 worldPos = modelMatrix * vec4(pos.x, pos.y, pos.z, 1.0);
-	worldPos.y += sin((time / 300) + ((worldPos.x + worldPos.z))) * sin(waterRotate * 2 + (worldPos.z / 20)) * 50;
+	vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+
+	// changes the height over time using a sine and cosine wave
+	worldPos.y += 60.0 * (sin((time * 0.0025) + ((worldPos.x + worldPos.z))) * cos(waterRotate * 0.75 + (worldPos.z * 0.1)));
 	
-	OUT.worldPos = vec3(worldPos);
+	OUT.worldPos = worldPos.xyz;
 
 	gl_Position = projMatrix * viewMatrix * worldPos;
 }

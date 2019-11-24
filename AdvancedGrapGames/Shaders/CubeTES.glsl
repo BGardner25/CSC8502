@@ -1,6 +1,6 @@
 #version 400
 
-layout(triangles, cw) in;
+layout(triangles, ccw) in;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -39,24 +39,25 @@ vec3 vec3Mix(vec3 v0, vec3 v1, vec3 v2) {
 }
 
 void main(void) {
-	vec3 pos = vec3Mix(gl_in[0].gl_Position.xyz,
-						gl_in[1].gl_Position.xyz,
-						gl_in[2].gl_Position.xyz);
-
-	vec3 cubeNormalise = normalize(pos);
-	
-	vec4 worldPos = modelMatrix * vec4(pos, 1) + vec4(mix(pos, cubeNormalise * heightVal, 1), 1.0);
-	
 	OUT.texCoord = vec2Mix(IN[0].texCoord,
 							IN[1].texCoord,
 							IN[2].texCoord);
 
 	mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
-	vec3 normal =  normalize(vec3Mix(IN[0].normal,
+	vec3 normal =  vec3Mix(IN[0].normal,
 							IN[1].normal,
-							IN[2].normal));
+							IN[2].normal);
 
 	OUT.normal = normalize(normalMatrix * normalize(normal));
+
+	vec3 pos = vec3Mix(gl_in[0].gl_Position.xyz,
+						gl_in[1].gl_Position.xyz,
+						gl_in[2].gl_Position.xyz);
+
+	vec3 cubeNormalise = normalize(pos);
+
+	vec4 worldPos = modelMatrix * (vec4(pos, 1) + vec4(mix(pos, cubeNormalise * heightVal * 3.0, 1), 1.0));
+
 	OUT.worldPos = worldPos.xyz;
 
 	gl_Position = projMatrix * viewMatrix * worldPos;

@@ -28,5 +28,5 @@ void main (void) {
 
     OUT.worldPos = (modelMatrix * vec4(position,1)).xyz;
 	// slowly raises terrain from the ground
-    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x, position.y * clamp(heightVal, 0.0, 1.0), position.z), 1.0);
+    gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x, position.y * clamp(heightVal * 0.3, 0.0, 1.0), position.z), 1.0);
 }

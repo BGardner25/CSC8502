@@ -22,14 +22,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sceneShader = new Shader(SHADERDIR"bumpVertex.glsl", SHADERDIR"bufferFragment.glsl");
 	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
-	cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
-	//cubeShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl", "", SHADERDIR"CubeTCS.glsl", SHADERDIR"CubeTES.glsl");
-	waterShader = new Shader(SHADERDIR"WaterVert.glsl", SHADERDIR"reflectLightFragment.glsl", "", SHADERDIR"WaterTCS.glsl", SHADERDIR"WaterTES.glsl");
+	waterShader = new Shader(SHADERDIR"TessVert.glsl", SHADERDIR"reflectLightFragment.glsl", "", SHADERDIR"WaterTCS.glsl", SHADERDIR"WaterTES.glsl");
 
 	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
 			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
 			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram()
-			|| !cubeShader->LinkProgram() || !waterShader->LinkProgram())
+			|| !waterShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -52,16 +50,21 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	cube = new OBJMesh();
 	if (!cube->LoadOBJMesh(MESHDIR"centeredcube.obj"))
 		return;
+	cube->SetPrimitiveType(GL_PATCHES);
 
 	lightObj = new OBJMesh();
 	if (!lightObj->LoadOBJMesh(MESHDIR"ico.obj"))
 		return;
 
+	dragon = new OBJMesh();
+	if (!dragon->LoadOBJMesh(MESHDIR"dragon.obj"));
+
 	cylinder->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	cube->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"BlueStoneTexture.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	dragon->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Texture2.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap()  || !heightMap->GetBumpMapThree()
-			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture() || !cube->GetTexture())
+			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture() || !cube->GetTexture() || !dragon->GetTexture())
 		return;
 
 	SetTextureRepeating(quad->GetTexture(), true);
@@ -72,12 +75,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(heightMap->GetTextureThree(), true);
 	SetTextureRepeating(heightMap->GetBumpMapThree(), true);
 	SetTextureRepeating(cylinder->GetTexture(), true);
-	SetTextureRepeating(cube->GetTexture(), true);
+	//SetTextureRepeating(cube->GetTexture(), true);
 
 	rootNode = new SceneNode();
 
 	SceneNode* cylinderNode = new SceneNode();
-	cylinderNode->SetShader(cylinderShader);
+	cylinderNode->SetShader(cylinderTwoShader);
 	cylinderNode->SetBoundingRadius(10000.0f);
 	cylinderNode->SetTransform(Matrix4::Translation(Vector3(18604.0f, 500.0f, 26643.50f)));
 	cylinderNode->SetModelScale(Vector3(1000.0f, 1500.0f, 1000.0f));
@@ -85,22 +88,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	rootNode->AddChild(cylinderNode);
 
 	SceneNode* cylinderTwo = new SceneNode();
-	cylinderTwo->SetShader(cylinderTwoShader);
+	cylinderTwo->SetShader(cylinderShader);
 	cylinderTwo->SetBoundingRadius(10000.0f);
 	cylinderTwo->SetTransform(Matrix4::Translation(Vector3(18604.0f, 3500.0f, 26643.50f)));
 	cylinderTwo->SetModelScale(Vector3(800.0f, 1500.0f, 800.0f));
 	cylinderTwo->SetMesh(cylinder);
 	rootNode->AddChild(cylinderTwo);
 
-	//cube->SetPrimitiveType(GL_PATCHES);
-	//glPatchParameteri(GL_PATCH_VERTICES, 3);
-	SceneNode* cubeNode = new SceneNode();
-	cubeNode->SetShader(cubeShader);
-	cubeNode->SetBoundingRadius(10000.0f);
-	cubeNode->SetTransform(Matrix4::Translation(Vector3(29000.0f, 3500.0f, 26000.0f)));
-	cubeNode->SetModelScale(Vector3(1000.0f, 1000.0f, 1000.0f));
-	cubeNode->SetMesh(cube);
-	rootNode->AddChild(cubeNode);
+	rootNode->AddChild(new Dragon(dragon));
+	rootNode->AddChild(new Cube(cube));
 
 	heightVal = 0.0f;
 	waterRotate = 0.0f;
@@ -111,11 +107,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	timePassed = 0.0f;
 	frames = 0.0f;
 	autoMove = true;
-	cameraStartTime = 0.0f;
+	time = 0.0f;
 	rotation = 0.0f;
 	cameraPointIndex = 0;
 
-	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 60.0f);
+	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 60.0f);
 
 	//SetupPointLights();
 
@@ -137,6 +133,7 @@ Renderer::~Renderer(void) {
 	delete cylinder;
 	delete cube;
 	delete lightObj;
+	delete dragon;
 
 	delete fontShader;
 	delete reflectShader;
@@ -146,7 +143,7 @@ Renderer::~Renderer(void) {
 	delete sceneShader;
 	delete combineShader;
 	delete pointLightShader;
-	delete cubeShader;
+	delete waterShader;
 
 	delete light;
 	delete pointLight;
@@ -167,8 +164,8 @@ void Renderer::UpdateScene(float msec) {
 	waterRotate += msec / 1000.0f;
 	rotation = msec * 0.01f;
 	heightVal += msec / 20000.0f;
-	cameraStartTime += msec;
-	//cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
+	time += msec;
+	cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
 
 	lastTime = w->GetTimer()->GetMS();
 	frames++;
@@ -196,8 +193,8 @@ void Renderer::UpdateScene(float msec) {
 			camera->SetChangePitch(0.0f);
 			camera->SetChangeYaw(0.0f);
 			camera->SetPosition(START_POS);
-			camera->SetYaw(0.0f);
-			camera->SetPitch(5.0f);
+			camera->SetYaw(8.0f);
+			camera->SetPitch(17.0f);
 		}
 	}
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_2)) {
@@ -206,8 +203,8 @@ void Renderer::UpdateScene(float msec) {
 			camera->SetChangePitch(0.0f);
 			camera->SetChangeYaw(0.0f);
 			camera->SetPosition(SECOND_POS);
-			camera->SetYaw(-10.0f);
-			camera->SetPitch(-15.0f);
+			camera->SetYaw(-12.0f);
+			camera->SetPitch(30.0f);
 		}
 	}
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_3)) {
@@ -238,13 +235,14 @@ void Renderer::RenderScene() {
 	//CombineBuffers();
 
 	DrawUI();
+
 	glUseProgram(0);
 	SwapBuffers();
 	ClearNodeLists();
 }
 
 void Renderer::CameraPath(float msec) {
-	if (cameraStartTime > 15000 && cameraPointIndex + 3 < cameraPoints.size()) {
+	if (time > 20000 && cameraPointIndex + 3 < cameraPoints.size()) {
 		totalTime += msec / 2000.0f;
 		Vector3 pos = camera->GetCatRomPos(totalTime, cameraPoints[cameraPointIndex], cameraPoints[cameraPointIndex + 1], 
 														cameraPoints[cameraPointIndex + 2], cameraPoints[cameraPointIndex + 3]);
@@ -254,11 +252,13 @@ void Renderer::CameraPath(float msec) {
 			camera->SetChangePitch(0.0060f);
 		else
 			camera->SetChangePitch(0.0f);
-		if (cameraPointIndex < 9)
+		if (cameraPointIndex < 9 )
 			camera->SetChangeYaw(0.012f);
-		else if (cameraPointIndex > 9)
-			camera->SetChangeYaw(0.075f);
-		if (cameraPointIndex >= 12)
+		else if (cameraPointIndex < 12)
+			camera->SetChangeYaw(0.032f);
+		else if (cameraPointIndex > 13 && cameraPointIndex < 17)
+			camera->SetChangeYaw(0.0020f);
+		else if (cameraPointIndex > 17)
 			camera->SetChangeYaw(0.0f);
 		camera->SetPosition(pos);
 		if (totalTime > 1.0) {
@@ -297,6 +297,13 @@ void Renderer::DrawNodes() {
 
 void Renderer::DrawNode(SceneNode* n) {
 	if (n->GetMesh()) {
+		// all nodes are either 3 or 4 verts
+		if (n->GetPrimitiveType() == GL_PATCHES) {
+			if (n->GetNumVertices() == 3)
+				glPatchParameteri(GL_PATCH_VERTICES, 3);
+			else if(n->GetNumVertices() == 4)
+				glPatchParameteri(GL_PATCH_VERTICES, 4);
+		}
 		SetCurrentShader(n->GetShader());
 		SetShaderLight(*light);
 		
@@ -330,10 +337,12 @@ void Renderer::DrawUI() {
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 
 	DrawText("FPS: " + to_string(fps), Vector3(0.0f, 0.0f, 0.0f), 16.0f);
-	DrawText("M: TOGGLE FREE LOOK/AUTOCAM ", Vector3(0.0f, 18.0f, 0.0f), 14.0f);
-	
+	DrawText("M: TOGGLE FREE LOOK/AUTOCAM", Vector3(0.0f, 18.0f, 0.0f), 14.0f);
+	DrawText("1: View Pillars", Vector3(0.0f, 34.0f, 0.0f), 14.0f);
+	DrawText("2: View Dragon", Vector3(0.0f, 50.0f, 0.0f), 14.0f);
+	DrawText("3: View Cube Turning Into Sphere", Vector3(0.0f, 66.0f, 0.0f), 14.0f);
 
-	projMatrix = Matrix4::Perspective(1.0f, 30000.0f, (float)width / (float)height, 45.0f);
+	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 45.0f);
 	glUseProgram(0);
 }
 
@@ -383,7 +392,7 @@ void Renderer::DrawWater() {
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 6);
 	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "waterRotate"), waterRotate);
-	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "time"), cameraStartTime);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "time"), time);
 
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
@@ -397,7 +406,7 @@ void Renderer::DrawWater() {
 		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
 
 	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
+		Matrix4::Rotation(waterRotate * 0.5, Vector3(0.0f, 0.0f, 1.0f));
 
 	UpdateShaderMatrices();
 

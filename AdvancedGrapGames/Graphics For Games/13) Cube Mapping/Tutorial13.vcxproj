@@ -71,11 +71,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cube.cpp" />
+    <ClCompile Include="Dragon.cpp" />
     <ClCompile Include="HeightMapPNG.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Tutorial13.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cube.h" />
+    <ClInclude Include="Dragon.h" />
     <ClInclude Include="HeightMapPNG.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>
