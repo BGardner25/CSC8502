@@ -8,7 +8,7 @@ uniform vec3 cameraPos;
 uniform vec4 lightColour;
 uniform vec3 lightPos;
 uniform float lightRadius;
-uniform float randomVal;
+uniform float heightVal;
 
 in Vertex {
     vec3 colour;
@@ -39,7 +39,7 @@ void main (void) {
 	vec3 blendRockSnow = blendTex(vec4(blendRockGrass, 1.0), 0.05, texture(texSnow, IN.texCoord), gradient);
 
 	vec4 diffuse = vec4(0, 0, 0, 0);
-	if(IN.worldPos.y > 2600 && gradient > 0.12) {
+	if(IN.worldPos.y > 2600 && gradient > 0.13) {
 		diffuse.rgb = blendRockSnow + vec3(0.7,0.7,0.7);
 	}
 	else {

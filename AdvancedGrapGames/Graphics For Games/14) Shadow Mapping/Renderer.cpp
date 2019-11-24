@@ -144,3 +144,60 @@ void Renderer::DrawFloor() {
 
 	floor->Draw();
 }
+
+
+void Renderer::DrawHeightMap() {
+	SetCurrentShader(lightShader);
+	SetShaderLight(*light);
+
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texGrass"), 2);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureTwo"), 3);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "texSnow"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTextureThree"), 5);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "heightVal"), heightVal);
+
+	modelMatrix.ToIdentity();
+	textureMatrix.ToIdentity();
+
+	UpdateShaderMatrices();
+
+	heightMap->Draw();
+
+	glUseProgram(0);
+}
+
+void Renderer::DrawWater() {
+	quad->SetPrimitiveType(GL_PATCHES);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	SetCurrentShader(waterShader);
+	SetShaderLight(*light);
+
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 6);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "waterRotate"), waterRotate);
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "time"), time);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+	float heightX = (RAW_WIDTH * HEIGHTMAP_X * 0.50f);
+	float heightY = (RAW_WIDTH - 1) * HEIGHTMAP_Y * 0.22;
+	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z * 0.50f);
+
+	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
+		Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
+		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
+
+	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
+		Matrix4::Rotation(waterRotate * 0.5, Vector3(0.0f, 0.0f, 1.0f));
+
+	UpdateShaderMatrices();
+
+	quad->Draw();
+
+	glUseProgram(0);
+}

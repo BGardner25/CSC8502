@@ -10,7 +10,7 @@ Cube::Cube(OBJMesh* cubeMesh) {
 	cubeNode->SetShader(cubeShader);
 	cubeNode->SetBoundingRadius(100000.0f);
 	cubeNode->SetTransform(Matrix4::Translation(Vector3(8022.42f, 2967.89f, 28263.30f)));
-	cubeNode->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
+	cubeNode->SetModelScale(Vector3(200.0f, 200.0f, 200.0f));
 	cubeNode->SetMesh(cubeMesh);
 	cubeNode->SetNumVertices(3);
 	cubeNode->SetPrimitiveType(GL_PATCHES);

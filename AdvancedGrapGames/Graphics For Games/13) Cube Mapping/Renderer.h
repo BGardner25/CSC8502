@@ -10,6 +10,8 @@
 #include "Cube.h"
 #include "Dragon.h"
 
+#define SHADOWSIZE 2048
+
 class Renderer : public OGLRenderer {
 public:
 	Renderer(Window& parent);
@@ -27,8 +29,6 @@ protected:
 	
 	void DrawUI();
 	void DrawSkybox();
-	void DrawHeightMap();
-	void DrawWater();
 	void DrawPointLight();
 	void FillBuffers();
 	void CombineBuffers();
@@ -55,6 +55,8 @@ protected:
 	Shader* cylinderTwoShader;
 	Shader* waterShader;
 	Shader* splitShader;
+	Shader* shadowSceneShader;
+	Shader* shadowShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
@@ -63,6 +65,7 @@ protected:
 
 	Light* light;
 	Light* pointLight;
+	Light* spotLight;
 	Camera* camera;
 	Camera* cameraTwo;
 
@@ -153,5 +156,12 @@ protected:
 	void SetupSplitScreen();
 	void DrawSplitScreen();
 	void DrawScene();
+	void SetupShadowMapping();
+	void DrawShadowScene();
+
+	GLuint shadowTex;
+	GLuint shadowFBO;
+
+	bool useShadowMapping;
 };
 

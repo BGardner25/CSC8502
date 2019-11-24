@@ -8,6 +8,7 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	type = GL_TRIANGLES;
 	numVertices = 0;
 	parent = NULL;
+	isTransparent = false;
 	modelScale = Vector3(1, 1, 1);
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;

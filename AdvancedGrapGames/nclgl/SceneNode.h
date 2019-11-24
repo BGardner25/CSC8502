@@ -52,6 +52,9 @@ public:
 	float GetCameraDistance() const { return distanceFromCamera; }
 	void SetCameraDistance(float f) { distanceFromCamera = f; }
 
+	bool GetIsTransparent() const { return isTransparent; }
+	void SetIsTransparent(bool isTransparent) { this->isTransparent = isTransparent; }
+
 	static bool CompareByCameraDistance(SceneNode* a, SceneNode* b) {
 		return (a->distanceFromCamera < b->distanceFromCamera) ? true : false;
 	}
@@ -74,5 +77,7 @@ protected:
 
 	GLuint type;
 	GLuint numVertices;
+
+	bool isTransparent;
 };
 

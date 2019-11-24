@@ -1,7 +1,8 @@
 #include "Dragon.h"
 
 Dragon::Dragon(OBJMesh* mesh) {
-	dragonShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	//dragonShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"PerPixelFragment.glsl");
+	dragonShader = new Shader(SHADERDIR"shadowSceneVert.glsl", SHADERDIR"shadowSceneFrag.glsl");
 
 	if (!dragonShader->LinkProgram())
 		return;
