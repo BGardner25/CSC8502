@@ -162,13 +162,13 @@ void Renderer::DrawPointLights() {
 
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 6);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 7);
 
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
@@ -221,17 +221,17 @@ void Renderer::CombineBuffers() {
 	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
 	UpdateShaderMatrices();
 
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 2);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "emissiveTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specularTex"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 6);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "emissiveTex"), 7);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specularTex"), 8);
 
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
 
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, lightEmissiveTex);
 
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
 	quad->Draw();

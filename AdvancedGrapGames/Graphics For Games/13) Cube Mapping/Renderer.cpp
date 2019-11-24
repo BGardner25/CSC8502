@@ -2,18 +2,21 @@
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camera = new Camera();
+	cameraTwo = new Camera();
 	basicFont = new Font(SOIL_load_OGL_texture(TEXTUREDIR"tahoma.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 16, 16);
 	heightMap = new HeightMapPNG(TEXTUREDIR"heightmap512.jpg");
 	quad = Mesh::GenerateQuad();
 	skyQuad = Mesh::GenerateQuad();
+	splitQuad = Mesh::GenerateQuad();
 
 	camera->SetPosition(POINT_2);
+	cameraTwo->SetPosition(POINT_2);
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
-	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 20.0f);
+	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 200000.0f);
 
-	fontShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
+	basicShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectLightFragment.glsl");
 	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl", SHADERDIR"skyboxFragment.glsl");
 	lightShader = new Shader(SHADERDIR"HeightMapVertex.glsl", SHADERDIR"HeightMapFragment.glsl");
@@ -23,11 +26,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	combineShader = new Shader(SHADERDIR"combineVert.glsl", SHADERDIR"combineFrag.glsl");
 	pointLightShader = new Shader(SHADERDIR"pointLightVert.glsl", SHADERDIR"PointLightFrag.glsl");
 	waterShader = new Shader(SHADERDIR"TessVert.glsl", SHADERDIR"reflectLightFragment.glsl", "", SHADERDIR"WaterTCS.glsl", SHADERDIR"WaterTES.glsl");
+	splitShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 
-	if (!fontShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
+	if (!basicShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
 			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
 			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram()
-			|| !waterShader->LinkProgram())
+			|| !waterShader->LinkProgram() || !splitShader->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -110,10 +114,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	time = 0.0f;
 	rotation = 0.0f;
 	cameraPointIndex = 0;
+	splitScreen = false;
 
 	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 60.0f);
 
 	//SetupPointLights();
+	SetupSplitScreen();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -127,6 +133,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 Renderer::~Renderer(void) {
 	delete rootNode;
 	delete camera;
+	delete cameraTwo;
 
 	delete heightMap;
 	delete quad;
@@ -134,8 +141,10 @@ Renderer::~Renderer(void) {
 	delete cube;
 	delete lightObj;
 	delete dragon;
+	delete skyQuad;
+	delete splitQuad;
 
-	delete fontShader;
+	delete basicShader;
 	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
@@ -144,19 +153,31 @@ Renderer::~Renderer(void) {
 	delete combineShader;
 	delete pointLightShader;
 	delete waterShader;
+	delete splitShader;
 
 	delete light;
 	delete pointLight;
 	currentShader = 0;
+	
+	glDeleteTextures(2, splitColourTex);
+	glDeleteTextures(2, splitDepthTex);
+	glDeleteFramebuffers(2, splitFBO);
 }
 
 void Renderer::UpdateScene(float msec) {
-	if (autoMove) {
-		CameraPath(msec);
-		camera->UpdateCamera(msec, true);
+	if (!splitScreen) {
+		if (autoMove) {
+			CameraPath(msec);
+			camera->UpdateCamera(msec, true);
+		}
+		else {
+			camera->UpdateCamera(msec);
+		}
 	}
 	else {
+		rootNode->Update(msec);
 		camera->UpdateCamera(msec);
+		cameraTwo->UpdateCamera(msec);
 	}
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
@@ -165,7 +186,7 @@ void Renderer::UpdateScene(float msec) {
 	rotation = msec * 0.01f;
 	heightVal += msec / 20000.0f;
 	time += msec;
-	cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
+	//cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
 
 	lastTime = w->GetTimer()->GetMS();
 	frames++;
@@ -178,45 +199,47 @@ void Renderer::UpdateScene(float msec) {
 	currentTime = w->GetTimer()->GetMS();
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_M)) {
 		if (autoMove == false) {
-			camera->SetChangePitch(0.0f);
-			camera->SetChangeYaw(0.0f);
+			camera->SetChangePitch(0.0f),	cameraTwo->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f),		cameraTwo->SetChangeYaw(0.0f);
 			cameraPointIndex = 0;
 			totalTime = 0;
-			camera->SetPitch(0.0f);
-			camera->SetYaw(0.0f);
+			camera->SetPitch(0.0f),			cameraTwo->SetPitch(0.0f);
+			camera->SetYaw(0.0f),			cameraTwo->SetYaw(0.0f);
 		}
 		autoMove = !autoMove;
 	}
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_1)) {
 		autoMove = false;
 		if (autoMove == false) {
-			camera->SetChangePitch(0.0f);
-			camera->SetChangeYaw(0.0f);
-			camera->SetPosition(START_POS);
-			camera->SetYaw(8.0f);
-			camera->SetPitch(17.0f);
+			camera->SetChangePitch(0.0f),	cameraTwo->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f),		cameraTwo->SetChangeYaw(0.0f);
+			camera->SetPosition(START_POS), cameraTwo->SetPosition(START_POS);
+			camera->SetYaw(8.0f),			cameraTwo->SetYaw(8.0f);
+			camera->SetPitch(17.0f),		cameraTwo->SetPitch(17.0f);
 		}
 	}
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_2)) {
 		autoMove = false;
 		if (autoMove == false) {
-			camera->SetChangePitch(0.0f);
-			camera->SetChangeYaw(0.0f);
-			camera->SetPosition(SECOND_POS);
-			camera->SetYaw(-12.0f);
-			camera->SetPitch(30.0f);
+			camera->SetChangePitch(0.0f),	cameraTwo->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f),		cameraTwo->SetChangeYaw(0.0f);
+			camera->SetPosition(SECOND_POS), cameraTwo->SetPosition(SECOND_POS);
+			camera->SetYaw(-12.0f),			cameraTwo->SetYaw(-12.0f);
+			camera->SetPitch(30.0f),		cameraTwo->SetPitch(30.0f);
 		}
 	}
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_3)) {
 		autoMove = false;
 		if (autoMove == false) {
-			camera->SetChangePitch(0.0f);
-			camera->SetChangeYaw(0.0f);
-			camera->SetPosition(THIRD_POS);
-			camera->SetYaw(-15.0f);
-			camera->SetPitch(-10.0f);
+			camera->SetChangePitch(0.0f),	cameraTwo->SetChangePitch(0.0f);
+			camera->SetChangeYaw(0.0f),		cameraTwo->SetChangeYaw(0.0f);
+			camera->SetPosition(THIRD_POS), cameraTwo->SetPosition(THIRD_POS);
+			camera->SetYaw(-15.0f),			cameraTwo->SetYaw(-15.0f);
+			camera->SetPitch(-10.0f),		cameraTwo->SetPitch(-10.0f);
 		}
 	}
+	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_P))
+		splitScreen = !splitScreen;
 }
 
 void Renderer::RenderScene() {
@@ -224,11 +247,28 @@ void Renderer::RenderScene() {
 	SortNodeLists();
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	DrawSkybox();
-	DrawHeightMap();
-	DrawWater();
+	
+	if(splitScreen) {
+		viewMatrix = camera->BuildViewMatrix();
+		glBindFramebuffer(GL_FRAMEBUFFER, splitFBO[0]);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		
+		DrawScene();
 
-	DrawNodes();
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		viewMatrix = cameraTwo->BuildViewMatrix();
+		glBindFramebuffer(GL_FRAMEBUFFER, splitFBO[1]);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+		DrawScene();
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		DrawSplitScreen();
+	}
+	else
+		DrawScene();
 
 	//FillBuffers();
 	//DrawPointLight();
@@ -239,6 +279,13 @@ void Renderer::RenderScene() {
 	glUseProgram(0);
 	SwapBuffers();
 	ClearNodeLists();
+}
+
+void Renderer::DrawScene() {
+	DrawSkybox();
+	DrawHeightMap();
+	DrawWater();
+	DrawNodes();
 }
 
 void Renderer::CameraPath(float msec) {
@@ -261,6 +308,7 @@ void Renderer::CameraPath(float msec) {
 		else if (cameraPointIndex > 17)
 			camera->SetChangeYaw(0.0f);
 		camera->SetPosition(pos);
+		cameraTwo->SetPosition(pos);
 		if (totalTime > 1.0) {
 			cameraPointIndex++;
 			totalTime = 0.0;
@@ -332,15 +380,16 @@ void Renderer::ClearNodeLists() {
 }
 
 void Renderer::DrawUI() {
-	SetCurrentShader(fontShader);
+	SetCurrentShader(basicShader);
 
 	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 
 	DrawText("FPS: " + to_string(fps), Vector3(0.0f, 0.0f, 0.0f), 16.0f);
 	DrawText("M: TOGGLE FREE LOOK/AUTOCAM", Vector3(0.0f, 18.0f, 0.0f), 14.0f);
-	DrawText("1: View Pillars", Vector3(0.0f, 34.0f, 0.0f), 14.0f);
-	DrawText("2: View Dragon", Vector3(0.0f, 50.0f, 0.0f), 14.0f);
-	DrawText("3: View Cube Turning Into Sphere", Vector3(0.0f, 66.0f, 0.0f), 14.0f);
+	DrawText("1: VIEW PILLARS", Vector3(0.0f, 34.0f, 0.0f), 14.0f);
+	DrawText("2: VIEW DRAGON", Vector3(0.0f, 50.0f, 0.0f), 14.0f);
+	DrawText("3: VIEW CUBE TURNING INTO SPHERE", Vector3(0.0f, 66.0f, 0.0f), 14.0f);
+	DrawText("P: TOGGLE SPLITSCREEN", Vector3(0.0f, 82.0f, 0.0f), 14.0f);
 
 	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 45.0f);
 	glUseProgram(0);
@@ -441,6 +490,45 @@ void Renderer::DrawText(const std::string& text, const Vector3& position, const 
 	delete mesh; //Once it's drawn, we don't need it anymore!
 }
 
+void Renderer::SetupSplitScreen() {
+	for (int i = 0; i < splitNum; ++i) {
+		glGenFramebuffers(1, &splitFBO[i]);
+
+		GenerateScreenTexture(splitDepthTex[i], true);
+		GenerateScreenTexture(splitColourTex[i]);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, splitFBO[i]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, splitColourTex[i], 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, splitDepthTex[i], 0);
+
+		if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			return;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+}
+
+void Renderer::DrawSplitScreen() {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	modelMatrix.ToIdentity();
+	SetCurrentShader(splitShader);
+	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+
+	viewMatrix.ToIdentity();
+	viewMatrix = viewMatrix * Matrix4::Translation(Vector3(-0.5f, -0.5f, -0.1)) * Matrix4::Scale(Vector3(1.5f, 0.5f, 0.0));
+	UpdateShaderMatrices();
+	splitQuad->SetTexture(splitColourTex[0]);
+	splitQuad->Draw();
+
+	viewMatrix.ToIdentity();
+	viewMatrix = viewMatrix * Matrix4::Translation(Vector3(-0.5f, 0.5f, -0.1)) * Matrix4::Scale(Vector3(1.5f, 0.5f, 0.0));
+	UpdateShaderMatrices();
+	splitQuad->SetTexture(splitColourTex[1]);
+	splitQuad->Draw();
+}
+
 
 
 
@@ -523,12 +611,12 @@ void Renderer::DrawPointLight() {
 
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 6);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 7);
 
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
@@ -574,17 +662,17 @@ void Renderer::CombineBuffers() {
 	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
 	UpdateShaderMatrices();
 
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 2);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "emissiveTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specularTex"), 4);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 6);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "emissiveTex"), 7);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specularTex"), 8);
 
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
 
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, lightEmissiveTex);
 
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
 	quad->Draw();

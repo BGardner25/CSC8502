@@ -44,7 +44,7 @@ protected:
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
 
-	Shader* fontShader;
+	Shader* basicShader;
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
@@ -54,14 +54,17 @@ protected:
 	Shader* cylinderShader;
 	Shader* cylinderTwoShader;
 	Shader* waterShader;
+	Shader* splitShader;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
 	Mesh* skyQuad;
+	Mesh* splitQuad;
 
 	Light* light;
 	Light* pointLight;
 	Camera* camera;
+	Camera* cameraTwo;
 
 	GLuint cubeMap;
 
@@ -139,5 +142,16 @@ protected:
 	GLuint pointLightFBO;
 	GLuint lightEmissiveTex;
 	GLuint lightSpecularTex;
+
+	bool splitScreen;
+	int splitNum = 2;
+	
+	GLuint splitFBO[2];
+	GLuint splitColourTex[2];
+	GLuint splitDepthTex[2];
+
+	void SetupSplitScreen();
+	void DrawSplitScreen();
+	void DrawScene();
 };
 
