@@ -146,7 +146,7 @@ void Renderer::DrawFloor() {
 }
 
 
-void Renderer::DrawHeightMap() {
+/*void Renderer::DrawHeightMap() {
 	SetCurrentShader(lightShader);
 	SetShaderLight(*light);
 
@@ -200,4 +200,4 @@ void Renderer::DrawWater() {
 	quad->Draw();
 
 	glUseProgram(0);
-}
+}*/

@@ -1,11 +1,12 @@
 #version 150 core
 
 uniform sampler2D diffuseTex;
-uniform sampler2D bumpTex;
 uniform sampler2D texGrass;
 uniform sampler2D texSnow;
+uniform sampler2D bumpTex;
 uniform sampler2D bumpTextureTwo;
 uniform sampler2D bumpTextureThree;
+uniform sampler2DShadow shadowTex;
 
 uniform vec3 cameraPos;
 uniform vec4 lightColour;
@@ -20,6 +21,7 @@ in Vertex {
 	vec3 tangent;
 	vec3 binormal;
     vec3 worldPos;
+	vec4 shadowProj;
 } IN;
 
 out vec4 fragColour;
@@ -38,22 +40,21 @@ vec3 blendTex(vec4 t0, float a0, vec4 t1, float a1) {
 
 void main (void) {
 	mat3 TBN = mat3(IN.tangent, IN.binormal, IN.normal);
-	vec3 normal = normalize(TBN * (texture2D(bumpTextureThree, IN.texCoord).rgb * 2.0 - 1.0));
+	vec3 normal = normalize(TBN * (texture2D(bumpTex, IN.texCoord).rgb * 2.0 - 1.0));
+	// blend two bump maps
 	float gradient = clamp((dot(normalize(IN.normal), vec3(0, 1, 0)) - 0.5), 0.0, 1.0);
 
 	// blends the rock and grass textures with rock being applied to steeper gradients
 	vec3 blendRockGrass = blendTex(texture(diffuseTex, IN.texCoord), 0.2, texture(texGrass, IN.texCoord), gradient);
 	vec3 blendRockSnow = blendTex(vec4(blendRockGrass, 1.0), 0.05, texture(texSnow, IN.texCoord), gradient);
-	vec3 blendBumpRockGrass = blendTex(texture(bumpTex, IN.texCoord), 0.2, texture(bumpTextureTwo, IN.texCoord), gradient);
 
 	vec4 diffuse = vec4(0, 0, 0, 0);
 	if(IN.worldPos.y > 2600 && gradient > 0.13) {
 		diffuse.rgb = blendRockSnow + vec3(0.7,0.7,0.7);
+		normal = normalize(TBN * (texture2D(bumpTextureThree, IN.texCoord).rgb * 2.0 - 1.0));
 	}
 	else {
 		diffuse.rgb = blendRockGrass;
-		//normal = normalize(TBN * (texture2D(bumpTex, IN.texCoord).rgb * 2.0 - 1.0));
-		normal = normalize(TBN * (texture2D(bumpTex, IN.texCoord).rgb * 2.0 - 1.0));
 	}
 	//diffuse.rgb = blendRockGrass;
 	diffuse.a = 1.0;
@@ -67,6 +68,15 @@ void main (void) {
 
     float rFactor = max(0.0, dot(halfDir, normal));
     float sFactor = pow(rFactor, 50.0);
+
+	float shadow = 1.0;
+
+	if(IN.shadowProj.w > 0.0) {
+		shadow = textureProj(shadowTex, IN.shadowProj);
+	}
+
+	lambert *= shadow;
+
     vec3 colour = (diffuse.rgb * lightColour.rgb);
     colour += (lightColour.rgb * sFactor) * 0.33;
     fragColour = vec4(colour * atten * lambert, diffuse.a);

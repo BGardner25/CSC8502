@@ -3,6 +3,7 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat4 textureMatrix;
+uniform mat4 shadowMatrix;
 
 uniform float heightVal;
 
@@ -19,6 +20,7 @@ out Vertex {
 	vec3 tangent;
 	vec3 binormal;
     vec3 worldPos;
+	vec4 shadowProj;
 } OUT;
 
 void main (void) {
@@ -32,6 +34,8 @@ void main (void) {
 	OUT.binormal = normalize(normalMatrix * normalize(cross(normal, tangent)));
 
     OUT.worldPos = (modelMatrix * vec4(position,1)).xyz;
+
+	OUT.shadowProj = (shadowMatrix * vec4(position + (normal * 1.5), 1));
 	// slowly raises terrain from the ground
     gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(vec3(position.x, position.y * clamp(heightVal, 0.0, 1.0), position.z), 1.0);
 }

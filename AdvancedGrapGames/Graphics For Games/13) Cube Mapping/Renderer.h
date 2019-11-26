@@ -57,6 +57,7 @@ protected:
 	Shader* splitShader;
 	Shader* shadowSceneShader;
 	Shader* shadowShader;
+	Shader* heightMapShadow;
 
 	HeightMapPNG* heightMap;
 	Mesh* quad;				// for water
@@ -74,6 +75,8 @@ protected:
 	float waterRotate;		// to animate water
 	float heightVal;		// to raise terrain
 	float totalTime = 0.0f;
+
+	// camera points
 	const Vector3 START_POS = Vector3(19210.0f, 981.0f, 34512.0f);
 	const Vector3 POINT_2 = Vector3(19874.3, 1371.43, 33257.3);
 	const Vector3 POINT_3 = Vector3(19331.6, 1371.43, 31398.8);
@@ -114,6 +117,7 @@ protected:
 	int cameraPointIndex;
 	bool autoMove;
 	float time;
+	float startTime;
 
 	const Vector3 SECOND_POS = Vector3(28780.20f, 667.29f, 17322.0f);
 	const Vector3 THIRD_POS = Vector3(6519.93f, 3589.71f, 33067.8f);
@@ -162,6 +166,6 @@ protected:
 	GLuint shadowTex;
 	GLuint shadowFBO;
 
-	bool useShadowMapping;
+	bool firstPass;
+	bool enableShadowMapping;
 };
-

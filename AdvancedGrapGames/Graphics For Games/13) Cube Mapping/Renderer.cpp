@@ -14,8 +14,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	light = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 5000.0f, (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
 		Vector4(0.9f, 0.9f, 1.0f, 1), (RAW_WIDTH * HEIGHTMAP_X) * 30);
-	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 200000.0f);
-	spotLight = new Light(Vector3(43928.2f, 24115.1f, -23950.6f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 5500.0f);
+	pointLight = new Light(Vector3(18604.0f, 8000.0f, 26643.50f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 2000.0f);
+	spotLight = new Light(Vector3(-3337.12f, 13014.7f, -8732.02f), Vector4(1.0f, 0.0f, 0.0f, 1.0f), 5500.0f);
 
 	basicShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl", SHADERDIR"reflectLightFragment.glsl");
@@ -30,17 +30,20 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	splitShader = new Shader(SHADERDIR"TexturedVertex.glsl", SHADERDIR"TexturedFragment.glsl");
 	shadowSceneShader = new Shader(SHADERDIR"shadowSceneVert.glsl", SHADERDIR"shadowSceneFrag.glsl");
 	shadowShader = new Shader(SHADERDIR"shadowVert.glsl", SHADERDIR"shadowFrag.glsl");
+	heightMapShadow = new Shader(SHADERDIR"HeightMapShadowVertex.glsl", SHADERDIR"HeightMapShadowFragment.glsl");
 
 	if (!basicShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() 
 			|| !reflectShader->LinkProgram() || !cylinderShader->LinkProgram() || !cylinderTwoShader->LinkProgram() 
 			|| !sceneShader->LinkProgram() || !combineShader->LinkProgram() || !pointLightShader->LinkProgram()
-			|| !waterShader->LinkProgram() || !splitShader->LinkProgram() || !sceneShader->LinkProgram() || !shadowShader->LinkProgram())
+			|| !waterShader->LinkProgram() || !splitShader->LinkProgram() || !sceneShader->LinkProgram() 
+			|| !shadowShader->LinkProgram() || !heightMapShadow->LinkProgram())
 		return;
 
 	quad->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Rock_Color.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetTextureTwo(SOIL_load_OGL_texture(TEXTUREDIR"WildGrass.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetBumpMapTwo(SOIL_load_OGL_texture(TEXTUREDIR"grass01_n.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetTextureThree(SOIL_load_OGL_texture(TEXTUREDIR"SnowLightCoverB_S.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	heightMap->SetBumpMapThree(SOIL_load_OGL_texture(TEXTUREDIR"SnowLightCoverB_N.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
@@ -70,7 +73,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	dragon->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Texture2.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	if (!cubeMap || !quad->GetTexture() || !heightMap->GetTexture() || !heightMap->GetBumpMap()  || !heightMap->GetBumpMapThree()
-			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture() || !cube->GetTexture() || !dragon->GetTexture())
+			|| !heightMap->GetTextureTwo()	|| !heightMap->GetTextureThree() || !cylinder->GetTexture() || !cube->GetTexture() 
+			|| !dragon->GetTexture() || heightMap->GetBumpMapTwo())
 		return;
 
 	SetTextureRepeating(quad->GetTexture(), true);
@@ -78,6 +82,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(heightMap->GetBumpMap(), true);
 	SetTextureRepeating(heightMap->GetTextureTwo(), true);
 	SetTextureRepeating(heightMap->GetTextureThree(), true);
+	SetTextureRepeating(heightMap->GetBumpMapTwo(), true);
 	SetTextureRepeating(heightMap->GetBumpMapThree(), true);
 	SetTextureRepeating(cylinder->GetTexture(), true);
 
@@ -138,16 +143,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	frames = 0.0f;
 	autoMove = true;
 	time = 0.0f;
+	startTime = 20000.0f;
 	rotation = 0.0f;
 	cameraPointIndex = 0;
 	splitScreen = false;
-	useShadowMapping = false;
+	firstPass = true;
+	enableShadowMapping = false;
 
 	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 60.0f);
-
-	//SetupPointLights();
-	SetupSplitScreen();
-	SetupShadowMapping();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -155,6 +158,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	//SetupPointLights();
+	SetupSplitScreen();
+	SetupShadowMapping();
+
 	init = true;
 }
 
@@ -177,6 +185,7 @@ Renderer::~Renderer(void) {
 	delete skyboxShader;
 	delete lightShader;
 	delete cylinderShader;
+	delete cylinderTwoShader;
 	delete sceneShader;
 	delete combineShader;
 	delete pointLightShader;
@@ -187,6 +196,9 @@ Renderer::~Renderer(void) {
 
 	delete light;
 	delete pointLight;
+	delete spotLight;
+
+	delete basicFont;
 	currentShader = 0;
 	
 	glDeleteTextures(2, splitColourTex);
@@ -208,17 +220,18 @@ void Renderer::UpdateScene(float msec) {
 		}
 	}
 	else {
-		rootNode->Update(msec);
 		camera->UpdateCamera(msec);
 		cameraTwo->UpdateCamera(msec);
 	}
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 	rootNode->Update(msec);
-	waterRotate += msec / 1000.0f;
-	rotation = msec * 0.01f;
-	heightVal += msec / 20000.0f;
 	time += msec;
+	if (time > startTime) {
+		waterRotate += msec / 1000.0f;
+		rotation = msec * 0.01f;
+		heightVal += msec / 20000.0f;
+	}
 	//cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
 
 	lastTime = w->GetTimer()->GetMS();
@@ -274,7 +287,7 @@ void Renderer::UpdateScene(float msec) {
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_P))
 		splitScreen = !splitScreen;
 	if (w->GetKeyboard()->KeyTriggered(KEYBOARD_O))
-		useShadowMapping = !useShadowMapping;
+		enableShadowMapping = !enableShadowMapping;
 }
 
 void Renderer::RenderScene() {
@@ -288,7 +301,8 @@ void Renderer::RenderScene() {
 		glBindFramebuffer(GL_FRAMEBUFFER, splitFBO[0]);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		
-		DrawScene();
+		DrawSkybox();
+		DrawNodes();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -296,16 +310,25 @@ void Renderer::RenderScene() {
 		glBindFramebuffer(GL_FRAMEBUFFER, splitFBO[1]);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-		DrawScene();
+		DrawSkybox();
+		DrawNodes();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		DrawSplitScreen();
 	}
-	else
-		DrawScene();
+	else {
+		if (enableShadowMapping) {
+			DrawSkybox();
+			DrawShadowScene();
+			DrawNodes();
+		}
+		else {
+			DrawSkybox();
+			DrawNodes();
+		}
+	}
 
-	DrawShadowScene();
 	//viewMatrix = camera->BuildViewMatrix();
 	//FillBuffers();
 	//DrawPointLight();
@@ -318,15 +341,8 @@ void Renderer::RenderScene() {
 	ClearNodeLists();
 }
 
-void Renderer::DrawScene() {
-	DrawSkybox();
-	//DrawHeightMap();
-	//DrawWater();
-	DrawNodes();
-}
-
 void Renderer::CameraPath(float msec) {
-	if (time > 20000 && cameraPointIndex + 3 < cameraPoints.size()) {
+	if (time > startTime && cameraPointIndex + 3 < cameraPoints.size()) {
 		totalTime += msec / 2000.0f;
 		Vector3 pos = camera->GetCatRomPos(totalTime, cameraPoints[cameraPointIndex], cameraPoints[cameraPointIndex + 1], 
 														cameraPoints[cameraPointIndex + 2], cameraPoints[cameraPointIndex + 3]);
@@ -389,15 +405,29 @@ void Renderer::DrawNode(SceneNode* n) {
 			else if(n->GetNumVertices() == 4)
 				glPatchParameteri(GL_PATCH_VERTICES, 4);
 		}
+
 		SetCurrentShader(n->GetShader());
-		if(n->GetShader() == shadowSceneShader)
-			SetShaderLight(*spotLight);
-		else
-			SetShaderLight(*light);
+
+		if (enableShadowMapping) {
+			if (n->GetMesh() == heightMap)
+				n->SetShader(heightMapShadow);
+			if (firstPass)
+				SetCurrentShader(shadowShader);
+		}
+		else if (n->GetMesh() == heightMap)
+			n->SetShader(lightShader);
+
+		SetShaderLight(*light);
 		
 		glUseProgram(currentShader->GetProgram());
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+		glActiveTexture(GL_TEXTURE9);
+		glBindTexture(GL_TEXTURE_2D, shadowTex);
 		
 		textureMatrix = n->GetTextureMatrix();
+		modelMatrix = (n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale()));
 		UpdateShaderMatrices();
 		// setup all needed uniforms
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
@@ -415,23 +445,20 @@ void Renderer::DrawNode(SceneNode* n) {
 		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false,
 													(float*)&(n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale())));
-
-		glActiveTexture(GL_TEXTURE6);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 		// used for deffered rendering...
 		//glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 1);
 		//glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "normTex"), 2);
 
 		Matrix4 tempMatrix = shadowMatrix * modelMatrix;
 
-		
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "shadowTex"), 9);
-		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "shadowMatrix"), 1, false, *&tempMatrix.values);
-
-		glActiveTexture(GL_TEXTURE9);
-		glBindTexture(GL_TEXTURE_2D, shadowTex);
+		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "shadowMatrix"), 1, false, (float*)&tempMatrix);
 		
+		viewMatrix = camera->BuildViewMatrix();
+
 		n->Draw(*this);
+
+		glUseProgram(0);
 	}
 }
 
@@ -451,6 +478,8 @@ void Renderer::DrawUI() {
 	DrawText("2: VIEW DRAGON", Vector3(0.0f, 50.0f, 0.0f), 14.0f);
 	DrawText("3: VIEW CUBE TURNING INTO SPHERE", Vector3(0.0f, 66.0f, 0.0f), 14.0f);
 	DrawText("P: TOGGLE SPLITSCREEN", Vector3(0.0f, 82.0f, 0.0f), 14.0f);
+	DrawText("O: TOGGLE SHADOW MAPPING", Vector3(0.0f, 98.0f, 0.0f), 14.0f);
+	DrawText("(NOT REALLY WORKING. MESSES SCENE UP)", Vector3(0.0f, 114.0f, 0.0f), 14.0f);
 
 	projMatrix = Matrix4::Perspective(1.0f, 100000.0f, (float)width / (float)height, 45.0f);
 	glUseProgram(0);
@@ -458,8 +487,8 @@ void Renderer::DrawUI() {
 
 void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
-	SetCurrentShader(skyboxShader);
 	glCullFace(GL_FRONT);
+	SetCurrentShader(skyboxShader);
 
 	UpdateShaderMatrices();
 	skyQuad->Draw();
@@ -553,6 +582,7 @@ void Renderer::SetupShadowMapping() {
 }
 
 void Renderer::DrawShadowScene() {
+	firstPass = true;
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
@@ -560,13 +590,12 @@ void Renderer::DrawShadowScene() {
 	SetCurrentShader(shadowShader);
 
 	// where the spotlight points to...
-	viewMatrix = Matrix4::BuildViewMatrix(spotLight->GetPosition(), Vector3(23624.70f, 893.60f, 10790.0f));
+	viewMatrix = Matrix4::BuildViewMatrix(spotLight->GetPosition(), Vector3(21929.8f, 799.209f, 22843.9f));
 	shadowMatrix = biasMatrix * (projMatrix * viewMatrix);
 
 	UpdateShaderMatrices();
 
-	// draw everything here...
-	//DrawWater();
+	
 	DrawNodes();
 
 	glUseProgram(0);
@@ -574,6 +603,7 @@ void Renderer::DrawShadowScene() {
 	glViewport(0, 0, width, height);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	firstPass = false;
 }
 
 
