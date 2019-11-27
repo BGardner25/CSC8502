@@ -52,7 +52,7 @@ void main (void) {
 	}
 	else {
 		diffuse.rgb = blendRockGrass;
-		//normal = normalize(TBN * (texture2D(bumpTex, IN.texCoord).rgb * 2.0 - 1.0));
+		//normal = IN.normal;
 		normal = normalize(TBN * (texture2D(bumpTex, IN.texCoord).rgb * 2.0 - 1.0));
 	}
 	//diffuse.rgb = blendRockGrass;

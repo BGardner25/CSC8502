@@ -143,7 +143,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	frames = 0.0f;
 	autoMove = true;
 	time = 0.0f;
-	startTime = 20000.0f;
+	startTime = 30000.0f;
 	rotation = 0.0f;
 	cameraPointIndex = 0;
 	splitScreen = false;
@@ -232,7 +232,6 @@ void Renderer::UpdateScene(float msec) {
 		rotation = msec * 0.01f;
 		heightVal += msec / 20000.0f;
 	}
-	//cout << "\n\n\n\n" << camera->GetPosition() << "\n\n\n\n";
 
 	lastTime = w->GetTimer()->GetMS();
 	frames++;
@@ -329,7 +328,6 @@ void Renderer::RenderScene() {
 		}
 	}
 
-	//viewMatrix = camera->BuildViewMatrix();
 	//FillBuffers();
 	//DrawPointLight();
 	//CombineBuffers();
