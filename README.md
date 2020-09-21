@@ -1,2 +1,1 @@
-# CSC8502
-Advanced Graphics For Games
+# CSC8502 Advanced Graphics For Games
